@@ -1,5 +1,8 @@
 package chess;
 
+import java.util.List;
+import java.util.function.Function;
+
 public class ChessBoard {
 
     // white pieces have an odd parity
@@ -18,15 +21,17 @@ public class ChessBoard {
     public final static byte WHITE_KING = 11;
     public final static byte BLACK_KING = 12;
 
-    // should always be equal to each other, lest weird things happen.
-    public final static int RANKS = 11; // marked by numbers 1-11
+    public final static int MAX_RANKS = 11; // marked by numbers 1-11
     public final static int FILES = 11; // marked by letters A-L
-    public final static int ROWS = RANKS + FILES - 1; // the number of vertical rows in the hexagonal board
+    public final static int[] RANKS_PER_FILE = {6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6};
 
-    private final byte[] board = new byte[RANKS * FILES];
+    private final byte[][] board = new byte[FILES][];
     private boolean boardColor = true;
 
     public ChessBoard(boolean boardColor) {
+        for (int i = 0; i < board.length; i++) {
+            board[i] = new byte[RANKS_PER_FILE[i]];
+        }
         this.boardColor = boardColor;
     }
 
@@ -80,8 +85,8 @@ public class ChessBoard {
         return boardColor;
     }
 
-    public int length() {
-        return board.length;
+    public int maxLength() {
+        return FILES * MAX_RANKS;
     }
 
     public void flipTurn() {
@@ -89,15 +94,19 @@ public class ChessBoard {
     }
 
     public void setPiece(Hexagon hex, byte piece) {
-        setPiece(hex.toIndex(), piece);
-    }
-
-    public byte getPiece(int file, int rank) {
-        return getPiece(Hexagon.toIndex(file, rank));
+        setPiece(hex.file(), hex.rank(), piece);
     }
 
     public byte getPiece(Hexagon hex) {
-        return getPiece(hex.toIndex());
+        return getPiece(hex.file(), hex.rank());
+    }
+
+    public void setPiece(int file, int rank, byte piece) {
+        board[file][rank] = piece;
+    }
+
+    public byte getPiece(int file, int rank) {
+        return board[file][rank];
     }
 
     public void setPiece(String notation, byte piece) {
@@ -106,14 +115,6 @@ public class ChessBoard {
 
     public byte getPiece(String notation) {
         return getPiece(Hexagon.fromNotation(notation));
-    }
-
-    public void setPiece(int index, byte piece) {
-        board[index] = piece;
-    }
-
-    public byte getPiece(int index) {
-        return board[index];
     }
 
     public static boolean hasPawnMoved(Hexagon pawnHex, byte piece) {
@@ -133,10 +134,10 @@ public class ChessBoard {
         }
     }
 
-    public Hexagon findKingHex(boolean pieceColor) {
-        for (int i = 0; i < board.length; i++) {
-            if (board[i] == WHITE_KING && pieceColor || board[i] == BLACK_KING && !pieceColor) {
-                return Hexagon.fromIndex(i);
+    public Hexagon findKing(boolean pieceColor) {
+        for (var hex : Hexagon.ORDERED) {
+            if (getPiece(hex) == WHITE_KING && pieceColor || getPiece(hex) == BLACK_KING && !pieceColor) {
+                return hex;
             }
         }
         throw new IllegalStateException("Board doesn't have a king");
@@ -155,28 +156,16 @@ public class ChessBoard {
         return piece1 % 2 != piece2 % 2;
     }
 
-    public static boolean inBounds(int file, int rank) {
-        return rank >= 0 && rank < RANKS && file >= 0 && file < FILES;
+    public boolean inBounds(int file, int rank) {
+        return file >= 0 && file < FILES && rank >= 0 && rank < board[file].length;
+    }
+
+    public boolean inBounds(Hexagon hex) {
+        return inBounds(hex.file(), hex.rank());
     }
 
     public static boolean isPawn(byte piece) {
         return piece == WHITE_PAWN || piece == BLACK_PAWN;
-    }
-
-    public static boolean isKnight(byte piece) {
-        return piece == WHITE_KNIGHT || piece == BLACK_KNIGHT;
-    }
-
-    public static boolean isBishop(byte piece) {
-        return piece == WHITE_BISHOP || piece == BLACK_BISHOP;
-    }
-
-    public static boolean isRook(byte piece) {
-        return piece == WHITE_ROOK || piece == BLACK_ROOK;
-    }
-
-    public static boolean isQueen(byte piece) {
-        return piece == WHITE_QUEEN || piece == BLACK_QUEEN;
     }
 
     public static boolean isKing(byte piece) {
@@ -204,78 +193,37 @@ public class ChessBoard {
 
     @Override
     public String toString() {
-        return toRectString();
+        return toString((x) -> false);
     }
 
-    // print out the hexagon board to a string that makes it easy to track row and file!
-    public String toRectString() {
+    public String toString(Function<Hexagon, Boolean> isMove) {
         var sb = new StringBuilder();
-        sb.append("   ");
 
         for (int file = 0; file < ChessBoard.FILES; file++) {
-            char fileChar = (char) (file + 'a');
-            sb.append(fileChar).append("  ");
-        }
-        sb.append("\n");
+            var ranksCount = RANKS_PER_FILE[file];
+            var ranksDiff = MAX_RANKS - ranksCount;
 
-        for (int rank = 0; rank < ChessBoard.RANKS; rank++) {
-            var rankStr = Integer.toString(rank + 1);
-            sb.append(rankStr).append(" ".repeat(Math.max(0, 3 - rankStr.length())));
+            char charStr = (char) (file + 'a');
+            sb.append(charStr).append("   ");
 
-            for (int file = 0; file < ChessBoard.FILES; file++) {
-                var piece = getPiece(file, rank);
-                sb.append(pieceToChar(piece)).append("  ");
+            sb.append("  ".repeat(Math.max(0, ranksDiff)));
+
+            for (int rank = 0; rank < ranksCount; rank++) {
+                if (isMove.apply(Hexagon.of(file, rank))) {
+                    sb.append('x').append("   ");
+                } else {
+                    var piece = getPiece(file, rank);
+                    sb.append(pieceToChar(piece)).append("   ");
+                }
             }
+
             sb.append("\n");
         }
 
         return sb.toString();
     }
 
-    // print out the hexagon board to a string that looks the way the board is supposed to!
-    public String toHexString() {
-        var sb = new StringBuilder();
-
-        var startFile = 5;
-        var startRank = 11;
-        var count = 1;
-
-        for (int i = 0; i < ChessBoard.ROWS; i++) {
-            if (i % 2 == 0) {
-                sb.append("  ");
-            }
-
-            sb.append(" ".repeat(Math.max(0, startFile)));
-
-            var file = startFile;
-            var rank = startRank;
-            for (int j = 0; j < count; j++) {
-                var piece = getPiece(file, rank);
-                sb.append(" ")
-                    .append(pieceToChar(piece))
-                    .append(" ");
-
-                file += 2;
-                if (file < 5) {
-                    rank += 1;
-                } else {
-                    rank -= 1;
-                }
-            }
-            sb.append("\n");
-
-            if (i < 5) {
-                startFile -= 1;
-                startRank -= 1;
-                count += 1;
-            } else if (i >= 15) {
-                startFile += 1;
-                startRank += 1;
-                count -= 1;
-            }
-
-        }
-
-        return sb.toString();
+    public String toMovesString(List<Hexagon> moves) {
+        return toString((hex) -> moves.stream().anyMatch((m) -> m.equals(hex)));
     }
 }
