@@ -7,11 +7,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static chess.ChessBoard.*;
-import static chess.Hexagon.Direction;
+import static chess.Hexagon.*;
 
 public class ChessGame {
 
-    public final static Direction[][] ROOK_OFFSETS = {
+    private final static Direction[][] ROOK_OFFSETS = {
         {Direction.UP},
         {Direction.DOWN},
         {Direction.DOWN_LEFT},
@@ -19,7 +19,7 @@ public class ChessGame {
         {Direction.UP_LEFT},
         {Direction.UP_RIGHT}
     };
-    public final static Direction[][] BISHOP_OFFSETS = {
+    private final static Direction[][] BISHOP_OFFSETS = {
         {Direction.UP_RIGHT, Direction.DOWN_RIGHT},
         {Direction.UP_LEFT, Direction.DOWN_LEFT},
         {Direction.UP, Direction.UP_RIGHT},
@@ -27,9 +27,9 @@ public class ChessGame {
         {Direction.DOWN, Direction.DOWN_RIGHT},
         {Direction.DOWN, Direction.DOWN_LEFT}
     };
-    public final static Direction[][] KING_OFFSETS =
+    private final static Direction[][] KING_OFFSETS =
         Stream.concat(Arrays.stream(ROOK_OFFSETS), Arrays.stream(BISHOP_OFFSETS)).toArray(Direction[][]::new);
-    public final static Direction[][] KNIGHT_OFFSETS = {
+    private final static Direction[][] KNIGHT_OFFSETS = {
         {Direction.UP_RIGHT, Direction.UP_RIGHT, Direction.UP},
         {Direction.UP_RIGHT, Direction.UP, Direction.UP},
         {Direction.DOWN_RIGHT, Direction.DOWN_RIGHT, Direction.DOWN},
@@ -45,8 +45,6 @@ public class ChessGame {
     };
 
     private final ChessBoard board;
-    private Hexagon whiteKingHex;
-    private Hexagon blackKingHex;
     private List<PieceMoves> whiteMoves = null;
     private List<PieceMoves> blackMoves = null;
 
@@ -55,27 +53,15 @@ public class ChessGame {
     }
 
     public static ChessGame empty() {
-        return new ChessGame(new ChessBoard(true), null, null);
-    }
-
-    public ChessGame(ChessBoard board, Hexagon whiteKingHex, Hexagon blackKingHex) {
-        this.board = board;
-        this.whiteKingHex = whiteKingHex;
-        this.blackKingHex = blackKingHex;
+        return new ChessGame(new ChessBoard(Turn.WHITE));
     }
 
     public ChessGame(ChessBoard board) {
         this.board = board;
-        whiteKingHex = board.findKing(true);
-        blackKingHex = board.findKing(false);
     }
 
     public ChessBoard board() {
         return board;
-    }
-
-    public Hexagon getKingHex(boolean color) {
-        return color ? whiteKingHex : blackKingHex;
     }
 
     public List<PieceMoves> getWhiteMoves() {
@@ -86,27 +72,27 @@ public class ChessGame {
         return blackMoves;
     }
 
-    public List<PieceMoves> getPieceMoves(boolean color) {
-        return color ? whiteMoves : blackMoves;
+    public List<PieceMoves> getPieceMoves(Turn turn) {
+        return turn.isWhite() ? whiteMoves : blackMoves;
     }
 
     public List<PieceMoves> getCurrMoves() {
-        return getPieceMoves(board.color());
+        return getPieceMoves(board.turn());
     }
 
     public List<PieceMoves> getOppositeMoves() {
-        return getPieceMoves(!board.color());
+        return getPieceMoves(board.turn().opposite());
     }
 
-    public boolean canMove(boolean color) {
-        return color == board.color();
+    public boolean canMove(Turn turn) {
+        return turn == board.turn();
     }
 
-    public boolean canMove(boolean color, Hexagon fromHex, Hexagon toHex) {
+    public boolean canMove(Turn turn, Hexagon fromHex, Hexagon toHex) {
         assert whiteMoves != null;
         assert blackMoves != null;
 
-        if (color != board.color()) {
+        if (turn != board.turn()) {
             return false;
         }
         var moves = getCurrMoves();
@@ -114,27 +100,30 @@ public class ChessGame {
         // has a match for a move from one hexagon to another hexagon
         return moves.stream().anyMatch((pm) -> {
             var isFrom = pm.piecePos().equals(fromHex);
-            var hasTo = pm.moves().stream().anyMatch((hex) -> hex.equals(toHex));
+            var hasTo = pm.moves().stream().anyMatch((move) -> move.equals(toHex));
             return isFrom && hasTo;
         });
     }
 
     public void initPieceMoves() {
         // we find the piece moves for all other pieces besides the king
-        whiteMoves = findPieceMoves(true);
-        blackMoves = findPieceMoves(false);
-        var currMoves = getCurrMoves();
-        var oppMoves = getOppositeMoves();
+        whiteMoves = findPieceMoves(Turn.WHITE);
+        blackMoves = findPieceMoves(Turn.BLACK);
+
+        var whiteKingHex = board.findKing(Turn.WHITE);
+        var blackKingHex = board.findKing(Turn.BLACK);
 
         // find the moves for both kings - excluding any attacking squares
         var whiteKingMoves = new PieceMoves(whiteKingHex, findKingMoves(whiteKingHex));
         var blackKingMoves = new PieceMoves(blackKingHex, findKingMoves(blackKingHex));
-        var kingHex = board.color() ? whiteKingHex : blackKingHex;
+        var kingHex = board.turn().isWhite() ? whiteKingHex : blackKingHex;
 
         // decide whether we will add the piece moves... are we in check?
         // we don't need to check if the opposite move is in check... it should never be!
-        var isAttacking = findAttacking(oppMoves);
-        var isCheck = isAttacking[kingHex.toIndex()];
+        var currMoves = getCurrMoves();
+        var oppMoves = getOppositeMoves();
+        var isAttacked = findAttacking(oppMoves);
+        var isCheck = isAttacked[kingHex.file()][kingHex.rank()];
         if (isCheck) {
             // if the current king is in check, we cannot move any other pieces
             // TODO: add support for maintaining all "blocking" moves
@@ -142,12 +131,16 @@ public class ChessGame {
         }
 
         // now, we can add the king moves
-        this.whiteMoves.add(whiteKingMoves);
-        this.blackMoves.add(blackKingMoves);
+        whiteMoves.add(whiteKingMoves);
+        blackMoves.add(blackKingMoves);
     }
 
-    public boolean[] findAttacking(List<PieceMoves> pieceMoves) {
-        var isAttacked = new boolean[board.maxLength()]; // defaulted to false
+    public boolean[][] findAttacking(List<PieceMoves> pieceMoves) {
+        var isAttacked = new boolean[FILES][];
+        for (var i = 0; i < isAttacked.length; i++) {
+            isAttacked[i] = new boolean[RANKS_PER_FILE[i]]; // defaulted to false
+        }
+
         for (var pm : pieceMoves) {
             for (var move : pm.moves()) {
                 // make an exception for the pawn... which does not attack when moving ahead
@@ -156,7 +149,7 @@ public class ChessGame {
                 if (isPawn(piece) && isMovingAhead) {
                     continue;
                 }
-                isAttacked[move.toIndex()] = true;
+                isAttacked[move.file()][move.rank()] = true;
             }
         }
         return isAttacked;
@@ -168,70 +161,44 @@ public class ChessGame {
         board.setPiece(toHex, piece);
         board.flipTurn();
 
-        if (piece == WHITE_KING) {
-            whiteKingHex = toHex;
-        } else if (piece == BLACK_KING) {
-            blackKingHex = toHex;
-        }
-
         whiteMoves = null;
         blackMoves = null;
     }
 
-    public boolean canPromote(Hexagon hex) {
-        var isLastRank = switch (hex.file()) {
-            case 0, 10 -> hex.rank() >= 5;
-            case 1, 9 -> hex.rank() >= 6;
-            case 2, 8 -> hex.rank() >= 7;
-            case 3, 7 -> hex.rank() >= 8;
-            case 4, 6 -> hex.rank() >= 9;
-            case 5 -> hex.rank() >= 10;
-            default -> throw new IllegalStateException("Cannot promote to an invalid file " + hex.file());
-        };
-        var piece = board.getPiece(hex);
-        return isLastRank && ChessBoard.isPawn(piece);
-    }
-
     public boolean isCheckmate() {
-        var boardColor = board.color();
-        var kingHex = getKingHex(boardColor);
-        var pieceMoves = getPieceMoves(boardColor);
-        var oppPieceMoves = getPieceMoves(!boardColor);
+        var turn = board.turn();
+        var kingHex = board.findKing(turn);
+        var pieceMoves = getPieceMoves(turn);
+        var oppPieceMoves = getPieceMoves(turn.opposite());
         var kingMoves = pieceMoves.get(pieceMoves.size() - 1);
 
         // the LAST element should always be the king moves!
-        assert(board.getPiece(kingMoves.piecePos()) == (boardColor ? WHITE_KING : BLACK_KING));
-
-        // store whether each hexagon is directly attacked by the opponent
-        var isAttacked = new boolean[board.maxLength()]; // defaulted to false
-        for (var moves : oppPieceMoves) {
-            for (var move : moves.moves()) {
-                isAttacked[move.toIndex()] = true;
-            }
-        }
+        assert(board.getPiece(kingMoves.piecePos()) == (turn.isWhite() ? WHITE_KING : BLACK_KING));
 
         // a king must be checked to be in checkmate
-        var isChecked = isAttacked[kingHex.toIndex()];
+        var isAttacked = findAttacking(oppPieceMoves);
+        var isChecked = isAttacked[kingHex.file()][kingHex.rank()];
         if (!isChecked) {
             return false;
         }
 
         // and all hexagons it can move to must be attacked (aka the opponent can move there)
         for (var move : kingMoves.moves()) {
-            if (!isAttacked[move.toIndex()])
+            if (!isAttacked[move.file()][move.rank()])
                 return false;
         }
 
         // TODO: add support for maintaining all "blocking" moves
+        // TODO: add support for preventing taking defended attackers
         return true;
     }
 
     // finds all pieces moves excluding the king moves, which are handled elsewhere
-    public List<PieceMoves> findPieceMoves(boolean playerColor) {
+    public List<PieceMoves> findPieceMoves(Turn turn) {
         List<PieceMoves> pieceMoves = new ArrayList<>();
         for (var hex : Hexagon.ORDERED) {
             var piece = board.getPiece(hex);
-            if (piece != EMPTY && isColor(piece, playerColor)) {
+            if (piece != EMPTY && isPieceTurn(piece, turn)) {
                 // we check the piece type to find the right piece moves (we have already checked the color)
                 switch (piece) {
                     case WHITE_ROOK, BLACK_ROOK -> pieceMoves.add(findRookMoves(hex));
@@ -265,19 +232,24 @@ public class ChessGame {
 
     // finds ALL the king moves and returns it directly to a list
     public List<Hexagon> findKingMoves(Hexagon hex) {
-        return findKingMoves(hex, (x) -> true); // we want all moves, so nothing is attacking
+        // we want all moves, so nothing is attacking
+        return findKingMoves(hex, (x) -> true);
     }
 
     public List<Hexagon> findKingMoves(Hexagon hex, Function<Hexagon, Boolean> isNotAttacked) {
         return findOffsetMoves(hex, KING_OFFSETS, isNotAttacked);
     }
 
+    private static final Direction[] AHEAD = {Direction.UP};
+    private static final Direction[] TAKE_LEFT = {Direction.UP_LEFT};
+    private static final Direction[] TAKE_RIGHT = {Direction.UP_RIGHT};
+
     public PieceMoves findPawnMoves(Hexagon hex) {
         var basePiece = board.getPiece(hex);
         List<Hexagon> moves = new ArrayList<>();
 
         // we can always move one rank ahead on the same file
-        var move1 = hex.walk(Direction.UP);
+        var move1 = hex.walk(AHEAD);
         if (board.inBounds(move1)) {
             var piece = board.getPiece(move1);
             if (piece == EMPTY) {
@@ -286,7 +258,7 @@ public class ChessGame {
         }
 
         // we can move a rank ahead of that if we haven't moved yet!
-        var move2 = move1.walk(Direction.UP);
+        var move2 = move1.walk(AHEAD);
         if (board.inBounds(move2) && !hasPawnMoved(hex, basePiece)) {
             var piece = board.getPiece(move2);
             if (piece == EMPTY) {
@@ -295,7 +267,7 @@ public class ChessGame {
         }
 
         // we can also take in adjacent ranks
-        var move3 = hex.walk(Direction.UP_LEFT);
+        var move3 = hex.walk(TAKE_LEFT);
         if (board.inBounds(move3)) {
             var piece = board.getPiece(move3);
             if (piece != EMPTY && areOpposite(basePiece, piece)) {
@@ -303,7 +275,7 @@ public class ChessGame {
             }
         }
 
-        var move4 = hex.walk(Direction.UP_RIGHT);
+        var move4 = hex.walk(TAKE_RIGHT);
         if (board.inBounds(move4)) {
             var piece = board.getPiece(move4);
             if (piece != EMPTY && areOpposite(basePiece, piece)) {

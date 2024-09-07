@@ -3,6 +3,8 @@ package chess;
 import java.util.List;
 import java.util.function.Function;
 
+import static chess.Hexagon.*;
+
 public class ChessBoard {
 
     // white pieces have an odd parity
@@ -25,18 +27,35 @@ public class ChessBoard {
     public final static int FILES = 11; // marked by letters A-L
     public final static int[] RANKS_PER_FILE = {6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6};
 
-    private final byte[][] board = new byte[FILES][];
-    private boolean boardColor = true;
+    public enum Turn {
+        BLACK,
+        WHITE;
 
-    public ChessBoard(boolean boardColor) {
+        public Turn opposite() {
+            return this == WHITE ? BLACK : WHITE;
+        }
+
+        public boolean isWhite() {
+            return this == WHITE;
+        }
+
+        public boolean isBlack() {
+            return this == BLACK;
+        }
+    }
+
+    private final byte[][] board = new byte[FILES][];
+    private Turn turn;
+
+    public ChessBoard(Turn turn) {
         for (int i = 0; i < board.length; i++) {
             board[i] = new byte[RANKS_PER_FILE[i]];
         }
-        this.boardColor = boardColor;
+        this.turn = turn;
     }
 
     public static ChessBoard initial() {
-        var board = new ChessBoard(true);
+        var board = new ChessBoard(Turn.WHITE);
 
         board.setPiece("b1", WHITE_PAWN);
         board.setPiece("c2", WHITE_PAWN);
@@ -81,16 +100,12 @@ public class ChessBoard {
         return board;
     }
 
-    public boolean color() {
-        return boardColor;
-    }
-
-    public int maxLength() {
-        return FILES * MAX_RANKS;
+    public Turn turn() {
+        return turn;
     }
 
     public void flipTurn() {
-        boardColor = !boardColor;
+        turn = turn.opposite();
     }
 
     public void setPiece(Hexagon hex, byte piece) {
@@ -134,18 +149,17 @@ public class ChessBoard {
         }
     }
 
-    public Hexagon findKing(boolean pieceColor) {
+    public Hexagon findKing(Turn turn) {
         for (var hex : Hexagon.ORDERED) {
-            if (getPiece(hex) == WHITE_KING && pieceColor || getPiece(hex) == BLACK_KING && !pieceColor) {
+            if (getPiece(hex) == WHITE_KING && turn.isWhite() || getPiece(hex) == BLACK_KING && turn.isBlack()) {
                 return hex;
             }
         }
         throw new IllegalStateException("Board doesn't have a king");
     }
 
-    public static boolean isColor(byte piece, boolean pieceColor) {
-        // white is true, black is false
-        return piece % 2 == 0 && pieceColor || piece % 2 == 1 && !pieceColor;
+    public static boolean isPieceTurn(byte piece, Turn turn) {
+        return piece % 2 == 0 && turn.isBlack() || piece % 2 == 1 && turn.isWhite();
     }
 
     public static boolean isWhite(byte piece) {
@@ -225,5 +239,20 @@ public class ChessBoard {
 
     public String toMovesString(List<Hexagon> moves) {
         return toString((hex) -> moves.stream().anyMatch((m) -> m.equals(hex)));
+    }
+
+    public String toPieceMovesString(List<PieceMoves> moves) {
+        var isAttacked = new boolean[FILES][];
+        for (var i = 0; i < isAttacked.length; i++) {
+            isAttacked[i] = new boolean[RANKS_PER_FILE[i]]; // defaulted to false
+        }
+
+        for (var pm : moves) {
+            for (var move : pm.moves()) {
+                isAttacked[move.file()][move.rank()] = true;
+            }
+        }
+
+        return toString((hex) -> isAttacked[hex.file()][hex.rank()]);
     }
 }

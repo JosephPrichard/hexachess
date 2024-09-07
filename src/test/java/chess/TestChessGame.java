@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static chess.ChessBoard.*;
+import static chess.Hexagon.*;
 
 public class TestChessGame {
 
@@ -52,11 +53,13 @@ public class TestChessGame {
         Assertions.assertEquals(WHITE_BISHOP, piece);
     }
 
+    // assert only checking REGULAR piece moves
     private void assertPieceMoves(List<Hexagon> actualMoves, String... expMoves) {
-        var expectedMoves = Stream.of(expMoves).map(Hexagon::fromNotation).toList();
+        var expectedMoves = Stream.of(expMoves)
+            .map(Hexagon::fromNotation)
+            .toList();
         Assertions.assertEquals(expectedMoves, actualMoves);
     }
-
 
     @Test
     public void testFindRookMoves() {
@@ -177,6 +180,26 @@ public class TestChessGame {
         assertPieceMoves(firstMoves, "g5");
 
         assertPieceMoves(takeMoves, "d5", "e5");
+    }
+
+    @Test
+    public void testIsCheckmate() {
+        var game = ChessGame.empty();
+        var board = game.board();
+        board.setPiece("f6", WHITE_KING);
+        board.setPiece("f4", BLACK_QUEEN);
+        board.setPiece("f8", BLACK_QUEEN);
+        board.setPiece("b4", BLACK_BISHOP);
+        board.setPiece("j4", BLACK_BISHOP);
+        board.setPiece("f9", BLACK_KING);
+
+        game.initPieceMoves();
+
+        System.out.println(game.board());
+        System.out.println(game.board().toPieceMovesString(game.getOppositeMoves()));
+
+        var isCheckmate = game.isCheckmate();
+        Assertions.assertTrue(isCheckmate);
     }
 
     @Test

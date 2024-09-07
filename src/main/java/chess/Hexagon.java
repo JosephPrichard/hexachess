@@ -19,30 +19,49 @@ public record Hexagon(int file, int rank) {
         UP_RIGHT,
     }
 
+    public record PieceMoves(Hexagon piecePos, List<Hexagon> moves) {}
+
     public static Hexagon of(int file, int rank) {
         return new Hexagon(file, rank);
     }
 
-    public Hexagon addOffset(int file, int rank) {
-        return Hexagon.of(file() + file, rank() + rank);
-    }
-
     public Hexagon walk(Direction[] directions) {
-        var hex = this;
+        var file = file();
+        var rank = rank();
         for (var direction : directions) {
-            hex = hex.walk(direction);
+            switch(direction) {
+                case UP -> rank += 1;
+                case DOWN -> rank -= 1;
+                case UP_LEFT -> {
+                    rank += file <= MIDPOINT ? 0 : 1;
+                    file -= 1;
+                }
+                case DOWN_LEFT -> {
+                    rank += file <= MIDPOINT ? -1 : 0;
+                    file -= 1;
+                }
+                case UP_RIGHT -> {
+                    rank += file < MIDPOINT ? 1 : 0;
+                    file += 1;
+                }
+                case DOWN_RIGHT -> {
+                    rank += file < MIDPOINT ? 0 : -1;
+                    file += 1;
+                }
+            }
         }
-        return hex;
+        return Hexagon.of(file, rank);
     }
 
-    public Hexagon walk(Direction direction) {
-        return switch(direction) {
-            case UP -> addOffset(0, 1);
-            case DOWN -> addOffset(0, -1);
-            case UP_LEFT -> file() <= MIDPOINT ? addOffset(-1, 0) : addOffset(-1, 1);
-            case DOWN_LEFT -> file() <= MIDPOINT ? addOffset(-1, -1) : addOffset(-1, 0);
-            case UP_RIGHT -> file() < MIDPOINT ? addOffset(1, 1) : addOffset(1,0);
-            case DOWN_RIGHT -> file() < MIDPOINT ? addOffset(1, 0) : addOffset(1, -1);
+    public boolean canPromote() {
+        return switch (file()) {
+            case 0, 10 -> rank() >= 5;
+            case 1, 9 -> rank() >= 6;
+            case 2, 8 -> rank() >= 7;
+            case 3, 7 -> rank() >= 8;
+            case 4, 6 -> rank() >= 9;
+            case 5 -> rank() >= 10;
+            default -> throw new IllegalStateException("Cannot promote to an invalid file " + file());
         };
     }
 
@@ -66,9 +85,5 @@ public record Hexagon(int file, int rank) {
     public String toString() {
         char fileChar = (char) (file + 'a');
         return fileChar + Integer.toString(rank + 1);
-    }
-
-    public int toIndex() {
-        return file * FILES + rank;
     }
 }
