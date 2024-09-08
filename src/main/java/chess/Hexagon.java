@@ -1,14 +1,18 @@
 package chess;
 
+import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import static chess.ChessBoard.FILES;
 import static chess.ChessBoard.RANKS_PER_FILE;
 
-public record Hexagon(int file, int rank) {
-    public static final Hexagon[] ORDERED = getOrdered();
-    public static final int MIDPOINT = 5;
+@Getter
+@EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
+public class Hexagon {
 
     public enum Direction {
         UP,
@@ -19,15 +23,37 @@ public record Hexagon(int file, int rank) {
         UP_RIGHT,
     }
 
-    public record PieceMoves(Hexagon piecePos, List<Hexagon> moves) {}
+    @Getter
+    @ToString
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Move {
+        private Hexagon from;
+        private Hexagon to;
+    }
+
+    @Getter
+    @EqualsAndHashCode
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PieceMoves {
+        private Hexagon hex;
+        private List<Hexagon> moves;
+    }
+
+    public static final Hexagon[] ORDERED = getOrdered();
+    public static final int MIDPOINT = 5;
+
+    private int file;
+    private int rank;
 
     public static Hexagon of(int file, int rank) {
         return new Hexagon(file, rank);
     }
 
     public Hexagon walk(Direction[] directions) {
-        var file = file();
-        var rank = rank();
+        var file = getFile();
+        var rank = getRank();
         for (var direction : directions) {
             switch(direction) {
                 case UP -> rank += 1;
@@ -54,14 +80,14 @@ public record Hexagon(int file, int rank) {
     }
 
     public boolean canPromote() {
-        return switch (file()) {
-            case 0, 10 -> rank() >= 5;
-            case 1, 9 -> rank() >= 6;
-            case 2, 8 -> rank() >= 7;
-            case 3, 7 -> rank() >= 8;
-            case 4, 6 -> rank() >= 9;
-            case 5 -> rank() >= 10;
-            default -> throw new IllegalStateException("Cannot promote to an invalid file " + file());
+        return switch (getFile()) {
+            case 0, 10 -> getRank() >= 5;
+            case 1, 9 -> getRank() >= 6;
+            case 2, 8 -> getRank() >= 7;
+            case 3, 7 -> getRank() >= 8;
+            case 4, 6 -> getRank() >= 9;
+            case 5 -> getRank() >= 10;
+            default -> throw new IllegalStateException("Cannot promote to an invalid file " + getFile());
         };
     }
 

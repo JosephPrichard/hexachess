@@ -1,5 +1,7 @@
+import static io.jooby.Jooby.runApp;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        runApp(args, Router::init);
     }
 }

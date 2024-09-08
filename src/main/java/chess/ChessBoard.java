@@ -1,10 +1,17 @@
 package chess;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 import java.util.function.Function;
 
 import static chess.Hexagon.*;
 
+@Getter
+@EqualsAndHashCode
+@NoArgsConstructor
 public class ChessBoard {
 
     // white pieces have an odd parity
@@ -109,11 +116,11 @@ public class ChessBoard {
     }
 
     public void setPiece(Hexagon hex, byte piece) {
-        setPiece(hex.file(), hex.rank(), piece);
+        setPiece(hex.getFile(), hex.getRank(), piece);
     }
 
     public byte getPiece(Hexagon hex) {
-        return getPiece(hex.file(), hex.rank());
+        return getPiece(hex.getFile(), hex.getRank());
     }
 
     public void setPiece(int file, int rank, byte piece) {
@@ -135,7 +142,7 @@ public class ChessBoard {
     public static boolean hasPawnMoved(Hexagon pawnHex, byte piece) {
         // pawns have moved if they exit the rank threshold, based on what color the pawn is
         if (isWhite(piece)) {
-            var minRank = switch (pawnHex.file()) {
+            var minRank = switch (pawnHex.getFile()) {
                 case 1, 9 -> 0;
                 case 2, 8 -> 1;
                 case 3, 7 -> 2;
@@ -143,9 +150,9 @@ public class ChessBoard {
                 case 5 -> 4;
                 default -> -1; // if a pawn is on any other file it must have moved
             };
-            return pawnHex.rank() > minRank;
+            return pawnHex.getRank() > minRank;
         } else {
-            return pawnHex.rank() < 7;
+            return pawnHex.getRank() < 7;
         }
     }
 
@@ -175,7 +182,7 @@ public class ChessBoard {
     }
 
     public boolean inBounds(Hexagon hex) {
-        return inBounds(hex.file(), hex.rank());
+        return inBounds(hex.getFile(), hex.getRank());
     }
 
     public static boolean isPawn(byte piece) {
@@ -248,11 +255,11 @@ public class ChessBoard {
         }
 
         for (var pm : moves) {
-            for (var move : pm.moves()) {
-                isAttacked[move.file()][move.rank()] = true;
+            for (var move : pm.getMoves()) {
+                isAttacked[move.getFile()][move.getRank()] = true;
             }
         }
 
-        return toString((hex) -> isAttacked[hex.file()][hex.rank()]);
+        return toString((hex) -> isAttacked[hex.getFile()][hex.getRank()]);
     }
 }
