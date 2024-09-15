@@ -7,12 +7,12 @@ import io.jooby.jackson.JacksonModule;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import model.Duel;
 import redis.clients.jedis.JedisPooled;
 import services.*;
 
 import java.util.Random;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import static utils.Log.LOGGER;
 
@@ -22,13 +22,13 @@ public class Router extends Jooby {
     public static class State {
         private final DuelDao duelDao;
         private final DuelService duelService;
-        private final BroadcastService.Service broadcastService;
+        private final BroadcastService broadcastService;
         private final ObjectMapper jsonMapper = new ObjectMapper();
 
         public State(JedisPooled jedis) {
             duelDao = new DuelDao(jedis);
             duelService = new DuelService(duelDao);
-            broadcastService = new BroadcastService.Service(jedis);
+            broadcastService = new BroadcastService(jedis);
         }
     }
 
@@ -111,7 +111,7 @@ public class Router extends Jooby {
                     var jsonResult = jsonMapper.writeValueAsString(match);
                     ws.send(jsonResult);
                 } catch (JsonProcessingException e) {
-                    LOGGER.log(Level.SEVERE, String.format("Failed to serialize json: %s", e.getMessage()));
+                    LOGGER.error(String.format("Failed to serialize json: %s", e.getMessage()));
                     ws.close();
                 }
             });
@@ -144,7 +144,7 @@ public class Router extends Jooby {
                         }
                     }
                 } catch (JsonProcessingException e) {
-                    LOGGER.log(Level.SEVERE, String.format("Failed to serialize json: %s", e.getMessage()));
+                    LOGGER.error(String.format("Failed to serialize json: %s", e.getMessage()));
                     ws.close();
                 }
             });

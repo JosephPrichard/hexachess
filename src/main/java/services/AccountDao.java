@@ -4,28 +4,27 @@ import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import model.Stats;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import static utils.Log.LOGGER;
 
 public class AccountDao {
+
     private final HikariDataSource ds;
 
     public AccountDao(HikariDataSource ds) {
         this.ds = ds;
     }
 
-    public void createTable(Connection conn) throws SQLException {
+    public static void createTable(Connection conn) throws SQLException {
         var sql = """
             CREATE TABLE accounts
                 (id VARCHAR, username VARCHAR, elo NUMERIC, wins INTEGER, losses INTEGER, password VARCHAR, salt VARCHAR,
@@ -36,8 +35,14 @@ public class AccountDao {
         }
     }
 
-    public void createIndices(Connection conn) {
-
+    public static void createIndices(Connection conn) throws SQLException {
+        var sql = """
+            CREATE INDEX idxUsername ON accounts(username);
+            CREATE INDEX idxElo ON accounts(elo);
+            """;
+        try (var stmt = conn.prepareStatement(sql)) {
+            stmt.executeUpdate();
+        }
     }
 
     public static String generateSalt() throws NoSuchAlgorithmException {
@@ -47,32 +52,49 @@ public class AccountDao {
     }
 
     public void insert(String username, String password) throws SQLException, NoSuchAlgorithmException {
-        try (var conn = ds.getConnection()) {
-            try (var stmt = conn.prepareStatement("INSERT INTO accounts VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-                var newId = UUID.randomUUID().toString();
-                var salt = generateSalt();
-                var saltedPassword = password + salt;
-                var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
+        insert(new AccountInst(UUID.randomUUID().toString(), username, password, 1000f, 0, 0));
+    }
 
-                stmt.setString(1, newId);
-                stmt.setString(2, username);
-                stmt.setFloat(3, 0f);
-                stmt.setInt(4, 0);
-                stmt.setInt(5, 0);
+    @Getter
+    @AllArgsConstructor
+    public static class AccountInst {
+        private String newId;
+        private String username;
+        private String password;
+        private float elo;
+        private int wins;
+        private int losses;
+    }
+
+    public void insert(AccountInst inst) throws SQLException, NoSuchAlgorithmException {
+        var salt = generateSalt();
+        var saltedPassword = inst.getPassword() + salt;
+        var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
+
+        try (var conn = ds.getConnection()) {
+            var sql = "INSERT INTO accounts VALUES (?, ?, ?, ?, ?, ?, ?)";
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, inst.getNewId());
+                stmt.setString(2, inst.getUsername());
+                stmt.setFloat(3, inst.getElo());
+                stmt.setInt(4, inst.getWins());
+                stmt.setInt(5, inst.getLosses());
                 stmt.setString(6, hashedPassword);
                 stmt.setString(7, salt);
                 stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }
 
     public boolean verify(String username, String inputPassword) throws SQLException {
         try (var conn = ds.getConnection()) {
-            try (var stmt = conn.prepareStatement("SELECT password, salt FROM accounts WHERE username = ?")) {
+            var sql = "SELECT password, salt FROM accounts WHERE username = ?";
+            try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, username);
+
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         var hashedPassword = rs.getString("password");
@@ -87,7 +109,7 @@ public class AccountDao {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }
@@ -96,67 +118,65 @@ public class AccountDao {
     @AllArgsConstructor
     public static class StatsUpdt {
         private String id;
-        private float elo;
-        private int wins;
-        private int losses;
+        private float eloInc;
+        private int winsInc;
+        private int lossesInc;
     }
 
     public void updateStats(StatsUpdt updt) throws SQLException {
+        if (updt.getEloInc() == 0 && updt.getWinsInc() == 0 && updt.getLossesInc() == 0) {
+            return; // noop
+        }
+
         try (var conn = ds.getConnection()) {
-            try (var stmt = conn.prepareStatement("UPDATE stats SET elo = ?, wins = ?, losses = ? WHERE id = ?")) {
-                stmt.setFloat(1, updt.getElo());
-                stmt.setInt(2, updt.getWins());
-                stmt.setInt(3, updt.getLosses());
+            var sql = "UPDATE accounts SET elo = elo + ?, wins = wins + ?, losses = losses + ? WHERE id = ?";
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setFloat(1, updt.getEloInc());
+                stmt.setInt(2, updt.getWinsInc());
+                stmt.setInt(3, updt.getLossesInc());
                 stmt.setString(4, updt.getId());
                 stmt.execute();
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class Stats {
-        private String id;
-        private String username;
-        private float elo;
-        private int wins;
-        private int losses;
+    public Stats getStats(String id) throws SQLException {
+        try (var conn = ds.getConnection()) {
+            var sql = "SELECT id, username, elo, wins, losses FROM accounts WHERE id = ? ";
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, id);
 
-        public static List<Stats> fromResultSet(ResultSet rs) throws SQLException {
-            try (rs) {
-                List<Stats> statList = new ArrayList<>();
-                while (rs.next()) {
-                    var id = rs.getString("id");
-                    var username = rs.getString("username");
-                    var elo = rs.getFloat("elo");
-                    var wins = rs.getInt("wins");
-                    var losses = rs.getInt("losses");
-                    statList.add(new Stats(id, username, elo, wins, losses));
-                }
-                return statList;
+                var rs = stmt.executeQuery();
+                return Stats.oneOfResults(rs);
             }
+        } catch (SQLException e) {
+            LOGGER.error(e.getMessage());
+            throw e;
         }
     }
 
-    public List<Stats> getLeaderboard(Float eloCursor) throws SQLException {
+    public List<Stats> getLeaderboard(Float eloCursor, int limit) throws SQLException {
         try (var conn = ds.getConnection()) {
             var sql = "SELECT id, username, elo, wins, losses FROM accounts WHERE 1 = 1 ";
             if (eloCursor != null) {
-                sql += "AND elo < ? ";
+                sql += " AND elo < ? ";
             }
-            sql += "ORDER BY elo DESC LIMIT 20";
+            sql += " ORDER BY elo DESC LIMIT ? ";
             try (var stmt = conn.prepareStatement(sql)) {
+                var index = 1;
                 if (eloCursor != null) {
-                    stmt.setFloat(1, eloCursor);
+                    stmt.setFloat(index++, eloCursor);
                 }
+                stmt.setInt(index, limit);
+
                 var rs = stmt.executeQuery();
-                return Stats.fromResultSet(rs);
+                return Stats.manyOfResults(rs);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }

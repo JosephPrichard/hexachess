@@ -3,14 +3,12 @@ package services;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import model.GameResult;
+import model.History;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import static utils.Log.LOGGER;
 
@@ -21,7 +19,7 @@ public class HistoryDao {
         this.ds = ds;
     }
 
-    public void createTable(Connection conn) throws SQLException {
+    public static void createTable(Connection conn) throws SQLException {
         var sql = """
             CREATE TABLE histories
                 (id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -33,28 +31,13 @@ public class HistoryDao {
         }
     }
 
-    public void createIndices(Connection conn) {
-
-    }
-
-    public enum GameResult {
-        WIN, LOSS, DRAW; // from white's perspective
-
-        public static GameResult fromInt(int result) {
-            return switch (result) {
-                case 0 -> WIN;
-                case 1 -> LOSS;
-                case 2 -> DRAW;
-                default -> throw new IllegalStateException("Failed to map a result code to a game result enum");
-            };
-        }
-
-        public int toInt() {
-            return switch (this) {
-                case WIN -> 0;
-                case LOSS -> 1;
-                case DRAW -> 2;
-            };
+    public static void createIndices(Connection conn) throws SQLException {
+        var sql = """
+            CREATE INDEX idxWhiteId ON histories(whiteId);
+            CREATE INDEX idxBlackId ON histories(blackId);
+            """;
+        try (var stmt = conn.prepareStatement(sql)) {
+            stmt.executeUpdate();
         }
     }
 
@@ -69,92 +52,64 @@ public class HistoryDao {
 
     public void insert(HistoryInst historyInst) throws SQLException  {
         try (var conn = ds.getConnection()) {
-            var stmt = conn.prepareStatement("INSERT INTO histories VALUES (?, ?, ?, ?)");
+            var sql = "INSERT INTO histories (whiteId, blackId, result, data) VALUES (?, ?, ?, ?)";
+            var stmt = conn.prepareStatement(sql);
             stmt.setString(1, historyInst.getWhiteId());
             stmt.setString(2, historyInst.getBlackId());
             stmt.setInt(3, historyInst.getResult().toInt());
             stmt.setString(4, historyInst.getData());
-            var rs = stmt.executeQuery();
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class History {
-        private String whiteId;
-        private String blackId;
-        private String whiteName;
-        private String blackName;
-        private GameResult result;
-        private String data;
-        private Timestamp playedOn;
+    public History getHistory(long id) throws SQLException  {
+        try (var conn = ds.getConnection()) {
+            var sql = """
+                SELECT h.id as id, h.whiteId as whiteId, h.blackId as blackId, a1.username as whiteName, a2.username as blackName,
+                    h.result as result, h.data as data, h.playedOn as playedOn FROM histories as h
+                INNER JOIN accounts as a1
+                ON a1.id = h.whiteId
+                INNER JOIN accounts as a2
+                ON a2.id = h.blackId
+                WHERE h.id = ?
+                """;
 
-        // reads from a result set that gets white and black as two different players
-        public static List<History> fromResultSetTwoAccounts(ResultSet rs) throws SQLException {
-            try (rs) {
-                List<History> historyList = new ArrayList<>();
-                while (rs.next()) {
-                    var whiteId = rs.getString("whiteId");
-                    var blackId = rs.getString("blackId");
-                    var whiteName = rs.getString("whiteName");
-                    var blackName = rs.getString("blackName");
-                    var result = rs.getInt("result");
-                    var data = rs.getString("data");
-                    var playedOn = rs.getTimestamp("playedOn");
-                    historyList.add(new History(whiteId, blackId, whiteName,
-                        blackName, GameResult.fromInt(result), data, playedOn));
-                }
-                return historyList;
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+
+                var rs = stmt.executeQuery();
+                return History.oneOfResults(rs);
             }
+        } catch (SQLException e) {
+            LOGGER.error(e.getMessage());
+            throw e;
         }
-
-        // reads from a result set that gets white and black as the same player
-        public static List<History> fromResultSetOneAccount(ResultSet rs) throws SQLException {
-            try (rs) {
-                List<History> historyList = new ArrayList<>();
-                while (rs.next()) {
-                    var accountId = rs.getString("accountId");
-                    var username = rs.getString("username");
-                    var result = rs.getInt("result");
-                    var data = rs.getString("data");
-                    var playedOn = rs.getTimestamp("playedOn");
-                    historyList.add(new History(accountId, accountId, username,
-                        username, GameResult.fromInt(result), data, playedOn));
-                }
-                return historyList;
-            }
-        }
-    }
-
-    private static String createGetHistoriesQuery(String whiteId, String blackId, String cursor) {
-        var sql = """
-            SELECT h.whiteId as whiteId, h.blackId as blackId, a1.username as whiteId,
-                a2.username as blackId, h.result as result, h.data as data, h.playedOn as playedOn FROM histories as h
-            INNER JOIN accounts as a1
-            ON a1.id = h.whiteId
-            INNER JOIN accounts as a2
-            ON a2.id = h.whiteId
-            WHERE 1 = 1
-            """;
-        if (whiteId != null) {
-            sql += "AND h.whiteId = ? ";
-        }
-        if (blackId != null) {
-            sql += "AND h.blackId = ? ";
-        }
-        if (cursor != null) {
-            sql += "AND h.id < ? ";
-        }
-        sql += "ORDER BY h.id DESC LIMIT 20";
-        return sql;
     }
 
     public List<History> getHistories(String whiteId, String blackId, String cursor) throws SQLException {
         try (var conn = ds.getConnection()) {
-            var sql = createGetHistoriesQuery(whiteId, blackId, cursor);
+            var sql = """
+                SELECT h.id as id, h.whiteId as whiteId, h.blackId as blackId, a1.username as whiteName, a2.username as blackName,
+                    h.result as result, h.data as data, h.playedOn as playedOn FROM histories as h
+                INNER JOIN accounts as a1
+                ON a1.id = h.whiteId
+                INNER JOIN accounts as a2
+                ON a2.id = h.blackId
+                WHERE 1 = 1
+                """;
+            if (whiteId != null) {
+                sql += " AND h.whiteId = ? ";
+            }
+            if (blackId != null) {
+                sql += " AND h.blackId = ? ";
+            }
+            if (cursor != null) {
+                sql += " AND h.id < ? ";
+            }
+            sql += " ORDER BY h.id DESC LIMIT 20 ";
 
             try (var stmt = conn.prepareStatement(sql)) {
                 int index = 1;
@@ -169,33 +124,32 @@ public class HistoryDao {
                 }
 
                 var rs = stmt.executeQuery();
-                return History.fromResultSetTwoAccounts(rs);
+                return History.manyOfResults(rs);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
-    }
-
-    private static String createGetHistoriesQuery(String cursor) {
-        var sql = """
-            SELECT h.whiteId as accountId, a.username as username, h.result as result, h.data as data, h.playedOn as playedOn FROM histories
-            INNER JOIN accounts as a
-            ON a.id = h.whiteId
-            WHERE h.whiteId = ? OR h.blackId = ?
-            """;
-        if (cursor != null) {
-            sql += "AND h.id < ? ";
-        }
-        sql += "ORDER BY h.id DESC LIMIT 20";
-        return sql;
     }
 
     public List<History> getHistories(String accountId, String cursor) throws SQLException {
         assert accountId != null;
 
         try (var conn = ds.getConnection()) {
-            var sql = createGetHistoriesQuery(cursor);
+            // this query assumes that whiteId and blackId will be the same value, so we only need to join from whiteId
+            var sql = """
+               SELECT h.id as id, h.whiteId as whiteId, h.blackId as blackId, a1.username as whiteName, a2.username as blackName,
+                    h.result as result, h.data as data, h.playedOn as playedOn FROM histories as h
+                INNER JOIN accounts as a1
+                ON a1.id = h.whiteId
+                INNER JOIN accounts as a2
+                ON a2.id = h.blackId
+                WHERE h.whiteId = ? OR h.blackId = ?
+                """;
+            if (cursor != null) {
+                sql += " AND h.id < ? ";
+            }
+            sql += " ORDER BY h.id DESC LIMIT 20 ";
 
             try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, accountId);
@@ -205,10 +159,10 @@ public class HistoryDao {
                 }
 
                 var rs = stmt.executeQuery();
-                return History.fromResultSetOneAccount(rs);
+                return History.manyOfResults(rs);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, e.getMessage());
+            LOGGER.error(e.getMessage());
             throw e;
         }
     }

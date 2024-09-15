@@ -1,6 +1,7 @@
 package services;
 
 import chess.Hexagon;
+import model.Duel;
 
 import java.util.Random;
 import java.util.UUID;

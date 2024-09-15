@@ -1,7 +1,8 @@
 package utils;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Log {
-    public static final Logger LOGGER = Logger.getLogger("HexChess");
+    public static final Logger LOGGER = LoggerFactory.getLogger("HexChess");
 }

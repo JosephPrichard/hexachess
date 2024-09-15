@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import model.Duel;
 import redis.clients.jedis.JedisPooled;
 import utils.Serializer;
 

@@ -5,7 +5,7 @@ import chess.ChessGame;
 import chess.Hexagon;
 import com.esotericsoftware.kryo.Kryo;
 import services.BroadcastService;
-import services.Duel;
+import model.Duel;
 
 public class Serializer {
 
