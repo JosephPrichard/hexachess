@@ -9,10 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Duel {
-    private ChessGame game;
-    private Player whitePlayer = null;
-    private Player blackPlayer = null;
-    private boolean isEnded;
 
     @Getter
     @ToString
@@ -24,6 +20,11 @@ public class Duel {
         private String name;
     }
 
+    private ChessGame game;
+    private Player whitePlayer = null;
+    private Player blackPlayer = null;
+    private boolean isEnded;
+
     public static Duel start() {
         return new Duel(ChessGame.start(), null, null, false);
     }
@@ -32,7 +33,7 @@ public class Duel {
         return game.getBoard().turn().isWhite() ? whitePlayer : blackPlayer;
     }
 
-    public boolean isPlayerTurn(Duel.Player player) {
+    public boolean isPlayerTurn(Player player) {
         var currPlayer = getCurrPlayer();
         if (currPlayer == null) {
             return false;

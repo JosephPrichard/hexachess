@@ -11,11 +11,18 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-public class DuelStore {
+public class DuelDao {
+
+    @Getter
+    @AllArgsConstructor
+    public static class ScanResult {
+        private String cursor;
+        private List<Duel> results;
+    }
 
     private final JedisPooled jedis;
 
-    public DuelStore(JedisPooled jedis) {
+    public DuelDao(JedisPooled jedis) {
         this.jedis = jedis;
     }
 
@@ -62,19 +69,12 @@ public class DuelStore {
         }
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class ScanResult {
-        private String cursor;
-        private List<Duel> results;
-    }
-
     public ScanResult scanDuels(String cursor) {
         var result = jedis.scan(cursor.getBytes());
-        var matchResults = result.getResult()
+        var duelResults = result.getResult()
             .stream()
-            .map(DuelStore::readDuel)
+            .map(DuelDao::readDuel)
             .toList();
-        return new ScanResult(result.getCursor(), matchResults);
+        return new ScanResult(result.getCursor(), duelResults);
     }
 }

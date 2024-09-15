@@ -20,15 +20,15 @@ public class Router extends Jooby {
 
     @Getter()
     public static class State {
-        private final DuelStore duelStore;
+        private final DuelDao duelDao;
         private final DuelService duelService;
-        private final BroadcastService broadcastService;
+        private final BroadcastService.Service broadcastService;
         private final ObjectMapper jsonMapper = new ObjectMapper();
 
         public State(JedisPooled jedis) {
-            duelStore = new DuelStore(jedis);
-            duelService = new DuelService(duelStore);
-            broadcastService = new BroadcastService(jedis);
+            duelDao = new DuelDao(jedis);
+            duelService = new DuelService(duelDao);
+            broadcastService = new BroadcastService.Service(jedis);
         }
     }
 
@@ -131,7 +131,7 @@ public class Router extends Jooby {
                                 var match = matchService.makeMove(matchId, player, input.getMove());
                                 var jsonOutput = jsonMapper.writeValueAsString(match);
                                 socketExchange.broadcastLocal(matchId, jsonOutput);
-                            } catch (DuelService.MatchException e) {
+                            } catch (DuelService.MoveException e) {
                                 var resp = new ErrorResp(e.getMessage());
                                 var jsonOutput = jsonMapper.writeValueAsString(resp);
                                 ws.send(jsonOutput);
@@ -158,7 +158,7 @@ public class Router extends Jooby {
     }
 
     public Duel.Player authorize(Context ctx) {
-        var duelStore = state.getDuelStore();
+        var duelStore = state.getDuelDao();
         var sessionId = ctx.header("Authorization").valueOrNull();
         Duel.Player player;
 

@@ -10,7 +10,7 @@ public class TestDuelService {
     @Test
     public void testUpdates() {
         try (var jedis = new JedisPooled("localhost", 6379)) {
-            var gameStorage = new DuelStore(jedis);
+            var gameStorage = new DuelDao(jedis);
 
             var id = "test-id";
             gameStorage.setDuel(id, Duel.start());
