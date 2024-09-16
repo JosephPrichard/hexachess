@@ -51,10 +51,6 @@ public class AccountDao {
         return Base64.getEncoder().encodeToString(salt);
     }
 
-    public void insert(String username, String password) throws SQLException, NoSuchAlgorithmException {
-        insert(new AccountInst(UUID.randomUUID().toString(), username, password, 1000f, 0, 0));
-    }
-
     @Getter
     @AllArgsConstructor
     public static class AccountInst {
@@ -64,6 +60,10 @@ public class AccountDao {
         private float elo;
         private int wins;
         private int losses;
+    }
+
+    public void insert(String username, String password) throws SQLException, NoSuchAlgorithmException {
+        insert(new AccountInst(UUID.randomUUID().toString(), username, password, 1000f, 0, 0));
     }
 
     public void insert(AccountInst inst) throws SQLException, NoSuchAlgorithmException {

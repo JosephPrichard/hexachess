@@ -6,23 +6,23 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import redis.clients.jedis.JedisPooled;
 
-public class TestDuelService {
+public class TestDuelDao {
 
     @Test
     public void testUpdates() {
         try (var jedis = new JedisPooled("localhost", 6379)) {
-            var gameStorage = new DuelDao(jedis);
+            var duelDao = new DuelDao(jedis);
 
             var id = "test-id";
-            gameStorage.setDuel(id, Duel.start());
+            duelDao.setDuel(id, Duel.start());
 
-            var firstMatch = gameStorage.getDuel(id);
+            var firstMatch = duelDao.getDuel(id);
             Assertions.assertEquals(Duel.start(), firstMatch);
 
             firstMatch.getGame().getBoard().setPiece("a1", ChessBoard.BLACK_QUEEN);
-            gameStorage.setDuel(id, firstMatch);
+            duelDao.setDuel(id, firstMatch);
 
-            var secondMatch = gameStorage.getDuel(id);
+            var secondMatch = duelDao.getDuel(id);
 
             Assertions.assertEquals(firstMatch, secondMatch);
         }

@@ -71,7 +71,7 @@ public class DuelDao {
     }
 
     public ScanResult scanDuels(String cursor) {
-        var result = jedis.scan(cursor.getBytes());
+        var result = jedis.scan(cursor != null ? cursor.getBytes() : "0".getBytes());
         var duelResults = result.getResult()
             .stream()
             .map(DuelDao::readDuel)
