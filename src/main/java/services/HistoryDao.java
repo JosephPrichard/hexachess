@@ -3,8 +3,8 @@ package services;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import model.GameResult;
-import model.History;
+import models.GameResult;
+import models.History;
 
 import java.sql.Connection;
 import java.sql.SQLException;

@@ -4,7 +4,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import model.Duel;
+import models.Duel;
 import redis.clients.jedis.JedisPooled;
 import utils.Serializer;
 
@@ -37,6 +37,9 @@ public class DuelDao {
 
     public Duel getDuel(String id) {
         var bytes = jedis.get(id.getBytes());
+        if (bytes == null) {
+            return null;
+        }
         return readDuel(bytes);
     }
 
@@ -52,6 +55,9 @@ public class DuelDao {
 
     public Duel.Player getPlayer(String sessionId) {
         var bytes = jedis.get(sessionId.getBytes());
+        if (bytes == null) {
+            return null;
+        }
         var rawBytes = new ByteArrayInputStream(bytes);
         try (var input = new Input(rawBytes)) {
             var kryo = Serializer.get();

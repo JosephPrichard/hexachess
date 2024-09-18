@@ -1,4 +1,4 @@
-package chess;
+package domain;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static chess.ChessBoard.*;
-import static chess.Hexagon.*;
+import static domain.ChessBoard.*;
+import static domain.Hexagon.*;
 
 public class TestChessGame {
 

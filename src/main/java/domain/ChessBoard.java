@@ -1,4 +1,4 @@
-package chess;
+package domain;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.function.Function;
 
-import static chess.Hexagon.*;
+import static domain.Hexagon.*;
 
 @Getter
 @EqualsAndHashCode

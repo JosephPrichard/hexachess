@@ -2,7 +2,7 @@ package services;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import model.Stats;
+import models.Stats;
 import org.junit.jupiter.api.*;
 
 import java.security.NoSuchAlgorithmException;
@@ -68,20 +68,22 @@ public class TestAccountDao {
             var accountDao = new AccountDao(ds);
 
             // when
-            accountDao.insert("user1", "password1");
-            accountDao.insert("user2", "password2");
-            accountDao.insert("user3", "password3");
+            var inst1 = accountDao.insert("user1", "password1");
+            var inst2 = accountDao.insert("user2", "password2");
+            var inst3 = accountDao.insert("user3", "password3");
 
-            var valid1 = accountDao.verify("user1", "password1");
-            var valid2 = accountDao.verify("user2", "wrong-password");
-            var valid3 = accountDao.verify("user3", "password3");
-            var valid4 = accountDao.verify("user1", "password3");
+            var id1 = accountDao.verify("user1", "password1");
+            var id2 = accountDao.verify("user2", "password2");
+            var id3 = accountDao.verify("user2", "wrong-password");
+            var id4 = accountDao.verify("user3", "password3");
+            var id5 = accountDao.verify("user1", "password3");
 
             // then
-            Assertions.assertTrue(valid1);
-            Assertions.assertFalse(valid2);
-            Assertions.assertTrue(valid3);
-            Assertions.assertFalse(valid4);
+            Assertions.assertEquals(id1, inst1.getNewId());
+            Assertions.assertEquals(id2, inst2.getNewId());
+            Assertions.assertNull(id3);
+            Assertions.assertEquals(id4, inst3.getNewId());
+            Assertions.assertNull(id5);
         }
     }
 

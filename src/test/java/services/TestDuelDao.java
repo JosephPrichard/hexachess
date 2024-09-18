@@ -1,7 +1,7 @@
 package services;
 
-import chess.ChessBoard;
-import model.Duel;
+import domain.ChessBoard;
+import models.Duel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import redis.clients.jedis.JedisPooled;

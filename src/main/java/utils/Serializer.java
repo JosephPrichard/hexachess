@@ -1,11 +1,11 @@
 package utils;
 
-import chess.ChessBoard;
-import chess.ChessGame;
-import chess.Hexagon;
+import domain.ChessBoard;
+import domain.ChessGame;
+import domain.Hexagon;
 import com.esotericsoftware.kryo.Kryo;
 import services.BroadcastService;
-import model.Duel;
+import models.Duel;
 
 public class Serializer {
 

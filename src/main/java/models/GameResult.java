@@ -1,4 +1,4 @@
-package model;
+package models;
 
 public enum GameResult {
     WIN, LOSS, DRAW; // from white's perspective

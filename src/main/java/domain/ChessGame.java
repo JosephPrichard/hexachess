@@ -1,4 +1,4 @@
-package chess;
+package domain;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static chess.ChessBoard.*;
-import static chess.Hexagon.*;
+import static domain.ChessBoard.*;
+import static domain.Hexagon.*;
 
 @Getter
 @EqualsAndHashCode

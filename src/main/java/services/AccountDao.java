@@ -4,7 +4,7 @@ import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import model.Stats;
+import models.Stats;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -62,8 +62,10 @@ public class AccountDao {
         private int losses;
     }
 
-    public void insert(String username, String password) throws SQLException, NoSuchAlgorithmException {
-        insert(new AccountInst(UUID.randomUUID().toString(), username, password, 1000f, 0, 0));
+    public AccountInst insert(String username, String password) throws SQLException, NoSuchAlgorithmException {
+        var inst = new AccountInst(UUID.randomUUID().toString(), username, password, 1000f, 0, 0);
+        insert(inst);
+        return inst;
     }
 
     public void insert(AccountInst inst) throws SQLException, NoSuchAlgorithmException {
@@ -89,22 +91,23 @@ public class AccountDao {
         }
     }
 
-    public boolean verify(String username, String inputPassword) throws SQLException {
+    public String verify(String username, String inputPassword) throws SQLException {
         try (var conn = ds.getConnection()) {
-            var sql = "SELECT password, salt FROM accounts WHERE username = ?";
+            var sql = "SELECT id, password, salt FROM accounts WHERE username = ?";
             try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, username);
 
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
+                        var id = rs.getString("id");
                         var hashedPassword = rs.getString("password");
                         var salt = rs.getString("salt");
 
                         var saltedPassword = inputPassword + salt;
                         var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), hashedPassword);
-                        return result.verified;
+                        return result.verified ? id : null;
                     } else {
-                        return false;
+                        return null;
                     }
                 }
             }

@@ -1,6 +1,6 @@
-package model;
+package models;
 
-import chess.ChessGame;
+import domain.ChessGame;
 import lombok.*;
 
 @Getter

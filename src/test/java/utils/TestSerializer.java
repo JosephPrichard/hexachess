@@ -2,7 +2,7 @@ package utils;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import model.Duel;
+import models.Duel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

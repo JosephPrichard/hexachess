@@ -2,8 +2,8 @@ package services;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import model.GameResult;
-import model.History;
+import models.GameResult;
+import models.History;
 import org.junit.jupiter.api.*;
 
 import java.security.NoSuchAlgorithmException;

@@ -1,12 +1,12 @@
-package chess;
+package domain;
 
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static chess.ChessBoard.FILES;
-import static chess.ChessBoard.RANKS_PER_FILE;
+import static domain.ChessBoard.FILES;
+import static domain.ChessBoard.RANKS_PER_FILE;
 
 @Getter
 @EqualsAndHashCode
