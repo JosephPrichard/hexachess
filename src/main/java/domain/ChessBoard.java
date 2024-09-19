@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.function.Function;
 
-import static domain.Hexagon.*;
+import static domain.Hexagon.PieceMoves;
 
 @Getter
 @EqualsAndHashCode

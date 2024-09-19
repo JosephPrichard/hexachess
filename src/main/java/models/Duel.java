@@ -17,6 +17,7 @@ public class Duel {
     @AllArgsConstructor
     public static class Player {
         private String id;
+        @EqualsAndHashCode.Exclude
         private String name;
     }
 

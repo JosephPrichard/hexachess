@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static domain.ChessBoard.*;
-import static domain.Hexagon.*;
+import static domain.Hexagon.PieceMoves;
 
 public class TestChessGame {
 

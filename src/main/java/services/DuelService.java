@@ -16,22 +16,22 @@ public class DuelService {
         }
     }
 
-    private final DuelDao duelDao;
+    private final DictService dictService;
     private final Random rand = new Random();
 
-    public DuelService(DuelDao duelDao) {
-        this.duelDao = duelDao;
+    public DuelService(DictService dictService) {
+        this.dictService = dictService;
     }
 
     public String create() {
         var game = Duel.start();
         var id = UUID.randomUUID().toString();
-        duelDao.setDuel(id, game);
+        dictService.setDuel(id, game);
         return id;
     }
 
     public Duel join(String matchId, Duel.Player player) {
-        var match = duelDao.getDuel(matchId);
+        var match = dictService.getDuel(matchId);
         if (match == null) {
             return null;
         }
@@ -55,12 +55,12 @@ public class DuelService {
             return match;
         }
 
-        duelDao.setDuel(matchId, match);
+        dictService.setDuel(matchId, match);
         return match;
     }
 
     public Duel makeMove(String matchId, Duel.Player player, Hexagon.Move move) {
-        var match = duelDao.getDuel(matchId);
+        var match = dictService.getDuel(matchId);
         if (match == null) {
             return null;
         }
@@ -82,22 +82,22 @@ public class DuelService {
 
         game.makeMove(move);
 
-        duelDao.setDuel(matchId, match);
+        dictService.setDuel(matchId, match);
         return match;
     }
 
     public Duel forfeit(String matchId) {
-        var match = duelDao.getDuel(matchId);
+        var match = dictService.getDuel(matchId);
         if (match == null) {
             return null;
         }
 
         match.setEnded(true);
-        duelDao.setDuel(matchId, match);
+        dictService.setDuel(matchId, match);
         return match;
     }
 
-    public DuelDao.ScanResult getMany(String cursor) {
-        return duelDao.scanDuels(cursor);
+    public DictService.ScanResult getMany(String cursor) {
+        return dictService.scanDuels(cursor);
     }
 }

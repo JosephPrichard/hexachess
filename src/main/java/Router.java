@@ -1,11 +1,13 @@
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.jooby.*;
+import io.jooby.Jooby;
 import io.jooby.jackson.JacksonModule;
 import redis.clients.jedis.JedisPooled;
-import routers.RestRouter;
-import routers.RouterState;
-import routers.WsRouter;
+import web.RestRouter;
+import web.ServerState;
+import web.WsRouter;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,26 +19,35 @@ import java.util.Map;
 public class Router extends Jooby {
 
     public static Router init() {
-        var envMap = readEnv();
+        try {
+            var envMap = readEnv();
 
-        var dbUrl = envMap.get("DB_URL");
-        var dbUser = envMap.get("DB_USER");
-        var dbPassword = envMap.get("DB_PASSWORD");
-        var redisHost = envMap.get("REDIS_HOST");
-        var redisPort = Integer.parseInt(envMap.get("REDIS_PORT"));
+            var dbUrl = envMap.get("DB_URL");
+            var dbUser = envMap.get("DB_USER");
+            var dbPassword = envMap.get("DB_PASSWORD");
+            var redisHost = envMap.get("REDIS_HOST");
+            var redisPort = Integer.parseInt(envMap.get("REDIS_PORT"));
 
-        var config = new HikariConfig();
-        config.setJdbcUrl(dbUrl);
-        config.setUsername(dbUser);
-        config.setPassword(dbPassword);
-        config.setMaximumPoolSize(10);
-        config.setAutoCommit(false);
+            var config = new HikariConfig();
+            config.setJdbcUrl(dbUrl);
+            config.setUsername(dbUser);
+            config.setPassword(dbPassword);
+            config.setMaximumPoolSize(10);
+            config.setAutoCommit(false);
 
-        var ds = new HikariDataSource(config);
-        var jedis = new JedisPooled(redisHost, redisPort);
-        var state = new RouterState(jedis, ds);
+            var loader = new ClassPathTemplateLoader();
+            loader.setPrefix("/templates");
+            loader.setSuffix(".hbs");
 
-        return new Router(state);
+            var handlebars = new Handlebars(loader);
+            var ds = new HikariDataSource(config);
+            var jedis = new JedisPooled(redisHost, redisPort);
+
+            var state = new ServerState(jedis, ds, handlebars);
+            return new Router(state);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private static Map<String, String> readEnv() {
@@ -63,7 +74,7 @@ public class Router extends Jooby {
         return envMap;
     }
 
-    public Router(RouterState state) {
+    public Router(ServerState state) {
         install(new JacksonModule());
         mount(new RestRouter(state));
         mount(new WsRouter(state));
@@ -71,5 +82,6 @@ public class Router extends Jooby {
 
     public static void main(String[] args) {
         runApp(args, Router::init);
+//        runApp(args, () -> new Router(new ServerState()));
     }
 }

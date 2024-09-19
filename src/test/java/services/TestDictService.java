@@ -6,23 +6,23 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import redis.clients.jedis.JedisPooled;
 
-public class TestDuelDao {
+public class TestDictService {
 
     @Test
     public void testUpdates() {
         try (var jedis = new JedisPooled("localhost", 6379)) {
-            var duelDao = new DuelDao(jedis);
+            var dictService = new DictService(jedis);
 
             var id = "test-id";
-            duelDao.setDuel(id, Duel.start());
+            dictService.setDuel(id, Duel.start());
 
-            var firstMatch = duelDao.getDuel(id);
+            var firstMatch = dictService.getDuel(id);
             Assertions.assertEquals(Duel.start(), firstMatch);
 
             firstMatch.getGame().getBoard().setPiece("a1", ChessBoard.BLACK_QUEEN);
-            duelDao.setDuel(id, firstMatch);
+            dictService.setDuel(id, firstMatch);
 
-            var secondMatch = duelDao.getDuel(id);
+            var secondMatch = dictService.getDuel(id);
 
             Assertions.assertEquals(firstMatch, secondMatch);
         }

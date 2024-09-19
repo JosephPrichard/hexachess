@@ -1,8 +1,7 @@
-package routers;
+package web;
 
-import domain.Hexagon;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.jooby.Context;
+import domain.Hexagon;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import io.jooby.WebSocket;
@@ -11,33 +10,29 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import models.Duel;
 import services.DuelService;
-import utils.Crypto;
 import utils.ErrorResp;
-
-import java.util.Random;
-import java.util.UUID;
 
 import static utils.Log.LOGGER;
 
 public class WsRouter extends Jooby {
 
-    private final RouterState state;
+    private final ServerState state;
 
-    private static final Random RANDOM = new Random();
-
-    public WsRouter(RouterState state) {
+    public WsRouter(ServerState state) {
         this.state = state;
 
         var jsonMapper = state.getJsonMapper();
         var broadcastService = state.getBroadcastService();
+        var dictService = state.getDictService();
 
         ws("/duels/join/{id}", (ctx, configurer) -> {
+            var sessionId = ctx.query("sessionId").valueOrNull();
             var duelIdSlug = ctx.path("id");
             if (duelIdSlug.isMissing()) {
                 ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);
             }
             var duelId = duelIdSlug.toString();
-            var player = authorizeWs(ctx);
+            var player = dictService.getSessionOrDefault(sessionId);
 
             configurer.onConnect(handleDuelConnect(duelId, player));
 
@@ -45,27 +40,6 @@ public class WsRouter extends Jooby {
 
             configurer.onClose((ws, statusCode) -> broadcastService.unsubscribeLocal(duelId, ws));
         });
-    }
-
-    public Duel.Player authorizeWs(Context ctx) {
-        var duelDao = state.getDuelDao();
-        var sessionId = ctx.query("sessionId").valueOrNull();
-
-        Duel.Player player;
-        if (sessionId != null) {
-            // we have an authorization header... so get which player we're actually logged in as
-            player = duelDao.getPlayer(sessionId);
-        } else {
-            // we don't have an authorization header... so create a "GUEST" player and set that as the logged in player
-            var guestName = "Guest " + RANDOM.nextInt(1_000_000);
-            player = new Duel.Player(UUID.randomUUID().toString(), guestName);
-            sessionId = Crypto.createToken();
-        }
-        if (player != null) {
-            duelDao.setPlayer(sessionId, player);
-        }
-
-        return player;
     }
 
     @Getter
