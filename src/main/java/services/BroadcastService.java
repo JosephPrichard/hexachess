@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import io.jooby.WebSocket;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import redis.clients.jedis.JedisPooled;
@@ -56,8 +57,7 @@ public class BroadcastService {
         }
     }
 
-    @Getter
-    @NoArgsConstructor
+    @Data
     @AllArgsConstructor
     public static class Message {
         private String id;

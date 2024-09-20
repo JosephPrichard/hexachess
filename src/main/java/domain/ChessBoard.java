@@ -1,5 +1,6 @@
 package domain;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,8 +10,7 @@ import java.util.function.Function;
 
 import static domain.Hexagon.PieceMoves;
 
-@Getter
-@EqualsAndHashCode
+@Data
 @NoArgsConstructor
 public class ChessBoard {
 

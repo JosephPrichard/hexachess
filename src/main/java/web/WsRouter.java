@@ -6,6 +6,7 @@ import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import io.jooby.WebSocket;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import models.Duel;
@@ -42,8 +43,7 @@ public class WsRouter extends Jooby {
         });
     }
 
-    @Getter
-    @NoArgsConstructor
+    @Data
     @AllArgsConstructor
     static class WsMessage {
         static final int FORFEIT = 0;

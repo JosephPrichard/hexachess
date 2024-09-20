@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jooby.StatusCode;
 import io.jooby.exception.StatusCodeException;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 
 import static utils.Log.LOGGER;
 
-@Getter
+@Data
 @AllArgsConstructor
 public class ErrorResp {
     private int status;

@@ -1,6 +1,7 @@
 package services;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import models.Duel;
 import redis.clients.jedis.JedisPooled;
@@ -18,11 +19,11 @@ public class DictService {
     private static final Random RANDOM = new Random();
     private final JedisPooled jedis;
 
-    @Getter
+    @Data
     @AllArgsConstructor
     public static class ScanResult {
-        private String cursor;
-        private List<Duel> results;
+        private final String cursor;
+        private final List<Duel> results;
     }
 
     public DictService(JedisPooled jedis) {

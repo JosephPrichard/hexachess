@@ -3,17 +3,11 @@ package models;
 import domain.ChessGame;
 import lombok.*;
 
-@Getter
-@Setter
-@EqualsAndHashCode
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
 public class Duel {
 
-    @Getter
-    @ToString
-    @EqualsAndHashCode
-    @NoArgsConstructor
+    @Data
     @AllArgsConstructor
     public static class Player {
         private String id;

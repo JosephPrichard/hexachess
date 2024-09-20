@@ -8,27 +8,20 @@ import utils.ErrorResp;
 
 public class RestRouter extends Jooby {
 
-    @Getter
-    @NoArgsConstructor
-    @EqualsAndHashCode
-    @ToString
+    @Data
     @AllArgsConstructor
     public static class CredentialsForm {
         private String username;
         private String password;
     }
 
-    @Getter
-    @EqualsAndHashCode
-    @ToString
+    @Data
     @AllArgsConstructor
     public static class SessionResult {
         private String sessionId;
     }
 
-    @Getter
-    @EqualsAndHashCode
-    @ToString
+    @Data
     @AllArgsConstructor
     public static class CreateMatchResult {
         private String id;

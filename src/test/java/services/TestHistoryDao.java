@@ -14,10 +14,21 @@ import java.util.List;
 public class TestHistoryDao {
 
     private HikariDataSource ds;
+    private AccountDao accountDao;
+    private HistoryDao historyDao;
 
     @BeforeAll
     public void beforeAll() throws SQLException {
-        ds = createTestDataSource();
+        var config = new HikariConfig();
+
+        config.setJdbcUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
+        config.setUsername("sa");
+        config.setPassword("");
+        config.setMaximumPoolSize(10);
+
+        ds = new HikariDataSource(config);
+        accountDao = new AccountDao(ds);
+        historyDao = new HistoryDao(ds);
     }
 
     @BeforeEach
@@ -27,26 +38,10 @@ public class TestHistoryDao {
                 stmt.execute();
             }
         }
-    }
-
-    public HikariDataSource createTestDataSource() throws SQLException {
-        var config = new HikariConfig();
-
-        config.setJdbcUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
-        config.setUsername("sa");
-        config.setPassword("");
-        config.setMaximumPoolSize(10);
-
-        var ds = new HikariDataSource(config);
-
-        try (var conn = ds.getConnection()) {
-            AccountDao.createTable(conn);
-            AccountDao.createIndices(conn);
-            HistoryDao.createTable(conn);
-            HistoryDao.createIndices(conn);
-        }
-
-        return ds;
+        accountDao.createTable();
+        accountDao.createIndices();
+        historyDao.createTable();
+        historyDao.createIndices();
     }
 
     public static void createTestData(AccountDao accountDao) {
@@ -63,76 +58,70 @@ public class TestHistoryDao {
 
     @Test
     public void testInsertThenGet() throws SQLException {
-        try (var ds = createTestDataSource()) {
-            // given
-            var accountDao = new AccountDao(ds);
-            var historyDao = new HistoryDao(ds);
-            createTestData(accountDao);
+        // given
+        var accountDao = new AccountDao(ds);
+        var historyDao = new HistoryDao(ds);
+        createTestData(accountDao);
 
-            // when
-            historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
-            historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
-            historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
+        // when
+        historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
+        historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
+        historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
 
-            var actualHistory1 = historyDao.getHistory(1);
-            var actualHistory2 = historyDao.getHistory(2);
-            var actualHistory3 = historyDao.getHistory(3);
+        var actualHistory1 = historyDao.getHistory(1);
+        var actualHistory2 = historyDao.getHistory(2);
+        var actualHistory3 = historyDao.getHistory(3);
 
-            // then
-            var expectedHistory1 = new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null);
-            var expectedHistory2 = new History(2, "id2", "id3", "user2", "user3", GameResult.LOSS, "data2", null);
-            var expectedHistory3 = new History(3, "id3", "id1", "user3", "user1", GameResult.DRAW, "data3", null);
+        // then
+        var expectedHistory1 = new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null);
+        var expectedHistory2 = new History(2, "id2", "id3", "user2", "user3", GameResult.LOSS, "data2", null);
+        var expectedHistory3 = new History(3, "id3", "id1", "user3", "user1", GameResult.DRAW, "data3", null);
 
-            Assertions.assertEquals(expectedHistory1, actualHistory1);
-            Assertions.assertEquals(expectedHistory2, actualHistory2);
-            Assertions.assertEquals(expectedHistory3, actualHistory3);
-        }
+        Assertions.assertEquals(expectedHistory1, actualHistory1);
+        Assertions.assertEquals(expectedHistory2, actualHistory2);
+        Assertions.assertEquals(expectedHistory3, actualHistory3);
     }
 
     @Test
     public void testGetHistoriesOneAccount() throws SQLException {
-        try (var ds = createTestDataSource()) {
-            // given
-            var accountDao = new AccountDao(ds);
-            var historyDao = new HistoryDao(ds);
-            createTestData(accountDao);
+        // given
+        var accountDao = new AccountDao(ds);
+        var historyDao = new HistoryDao(ds);
+        createTestData(accountDao);
 
-            historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
-            historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
-            historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
+        historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
+        historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
+        historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
 
-            // when
-            var actualHistoryList = historyDao.getHistories("id1", null);
+        // when
+        var actualHistoryList = historyDao.getHistories("id1", null);
 
-            // then
-            var expectedHistoryList = List.of(
-                new History(3, "id3", "id1", "user3", "user1", GameResult.DRAW, "data3", null),
-                new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null));
+        // then
+        var expectedHistoryList = List.of(
+            new History(3, "id3", "id1", "user3", "user1", GameResult.DRAW, "data3", null),
+            new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null));
 
-            Assertions.assertEquals(expectedHistoryList, actualHistoryList);
-        }
+        Assertions.assertEquals(expectedHistoryList, actualHistoryList);
     }
 
     @Test
     public void testGetHistories() throws SQLException {
-        try (var ds = createTestDataSource()) {
-            // given
-            var accountDao = new AccountDao(ds);
-            var historyDao = new HistoryDao(ds);
-            createTestData(accountDao);
+        // given
+        var accountDao = new AccountDao(ds);
+        var historyDao = new HistoryDao(ds);
+        createTestData(accountDao);
 
-            historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
-            historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
-            historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
+        historyDao.insert(new HistoryDao.HistoryInst("id1", "id2", GameResult.WIN, "data1"));
+        historyDao.insert(new HistoryDao.HistoryInst("id2", "id3", GameResult.LOSS, "data2"));
+        historyDao.insert(new HistoryDao.HistoryInst("id3", "id1", GameResult.DRAW, "data3"));
 
-            // when
-            var actualHistoryList = historyDao.getHistories("id1", null, null);
+        // when
+        var actualHistoryList = historyDao.getHistories("id1", null, null);
 
-            // then
-            var expectedHistoryList = List.of(
-                new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null));
+        // then
+        var expectedHistoryList = List.of(
+            new History(1, "id1", "id2", "user1", "user2", GameResult.WIN, "data1", null));
 
-            Assertions.assertEquals(expectedHistoryList, actualHistoryList);
-        }
+        Assertions.assertEquals(expectedHistoryList, actualHistoryList);
     }
 }

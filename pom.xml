@@ -89,12 +89,17 @@
             <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
-        <!-- Code generation -->
+        <!-- Annotation -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.34</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.0.0</version>
         </dependency>
         <!-- Logging -->
         <dependency>

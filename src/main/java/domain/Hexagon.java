@@ -8,9 +8,7 @@ import java.util.List;
 import static domain.ChessBoard.FILES;
 import static domain.ChessBoard.RANKS_PER_FILE;
 
-@Getter
-@EqualsAndHashCode
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
 public class Hexagon {
 
@@ -23,18 +21,14 @@ public class Hexagon {
         UP_RIGHT,
     }
 
-    @Getter
-    @ToString
-    @NoArgsConstructor
+    @Data
     @AllArgsConstructor
     public static class Move {
         private Hexagon from;
         private Hexagon to;
     }
 
-    @Getter
-    @EqualsAndHashCode
-    @NoArgsConstructor
+    @Data
     @AllArgsConstructor
     public static class PieceMoves {
         private Hexagon hex;

@@ -82,6 +82,5 @@ public class Router extends Jooby {
 
     public static void main(String[] args) {
         runApp(args, Router::init);
-//        runApp(args, () -> new Router(new ServerState()));
     }
 }

@@ -1,5 +1,6 @@
 package domain;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +14,7 @@ import java.util.stream.Stream;
 import static domain.ChessBoard.*;
 import static domain.Hexagon.*;
 
-@Getter
-@EqualsAndHashCode
+@Data
 @NoArgsConstructor
 public class ChessGame {
 

@@ -4,18 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.zaxxer.hikari.HikariDataSource;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import redis.clients.jedis.JedisPooled;
 import services.*;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-@Getter()
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServerState {

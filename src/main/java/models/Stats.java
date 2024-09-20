@@ -1,18 +1,13 @@
 package models;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@EqualsAndHashCode
-@ToString
+@Data
 @AllArgsConstructor
 public class Stats {
     private String id;
@@ -28,25 +23,5 @@ public class Stats {
         var wins = rs.getInt("wins");
         var losses = rs.getInt("losses");
         return new Stats(id, username, elo, wins, losses);
-    }
-
-    public static Stats oneOfResults(ResultSet rs) throws SQLException {
-        try (rs) {
-            if (rs.next()) {
-                return Stats.ofResult(rs);
-            }
-            return null;
-        }
-    }
-
-    public static List<Stats> manyOfResults(ResultSet rs) throws SQLException {
-        try (rs) {
-            List<Stats> statList = new ArrayList<>();
-            while (rs.next()) {
-                var stats = Stats.ofResult(rs);
-                statList.add(stats);
-            }
-            return statList;
-        }
     }
 }
