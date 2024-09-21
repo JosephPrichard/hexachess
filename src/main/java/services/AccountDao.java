@@ -3,25 +3,31 @@ package services;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
+import lombok.NoArgsConstructor;
 import models.Stats;
-import org.intellij.lang.annotations.Language;
-import utils.Database;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
 
 import javax.sql.DataSource;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
 public class AccountDao {
 
-    private final DataSource ds;
+    private final QueryRunner runner;
+    private final ResultSetHandler<AccountCreds> credsMapper = new BeanHandler<>(AccountCreds.class);
+    private final ResultSetHandler<Stats> statsMapper = new BeanHandler<>(Stats.class);
+    private final ResultSetHandler<List<Stats>> statsListMapper = new BeanListHandler<>(Stats.class);
 
     public AccountDao(DataSource ds) {
-        this.ds = ds;
+        runner = new QueryRunner(ds);
     }
 
     public void createTable() throws SQLException {
@@ -36,7 +42,7 @@ public class AccountDao {
                 salt VARCHAR,
                 PRIMARY KEY (id))
             """;
-        Database.executeUpdate(ds, sql);
+        runner.execute(sql);
     }
 
     public void createIndices() throws SQLException {
@@ -44,7 +50,7 @@ public class AccountDao {
             CREATE INDEX idxUsername ON accounts(username);
             CREATE INDEX idxElo ON accounts(elo);
             """;
-        Database.executeUpdate(ds, sql);
+        runner.execute(sql);
     }
 
     @Data
@@ -76,36 +82,28 @@ public class AccountDao {
         var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
 
         var sql = "INSERT INTO accounts VALUES (?, ?, ?, ?, ?, ?, ?)";
-        Database.executeUpdate(ds, sql, (stmt) -> {
-            stmt.setString(1, inst.getNewId());
-            stmt.setString(2, inst.getUsername());
-            stmt.setFloat(3, inst.getElo());
-            stmt.setInt(4, inst.getWins());
-            stmt.setInt(5, inst.getLosses());
-            stmt.setString(6, hashedPassword);
-            stmt.setString(7, salt);
-        });
+        runner.execute(sql, inst.getNewId(), inst.getUsername(), inst.getElo(), inst.getWins(), inst.getLosses(), hashedPassword, salt);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AccountCreds {
+        private String id;
+        private String password;
+        private String salt;
     }
 
     public String verify(String username, String inputPassword) throws SQLException {
         var sql = "SELECT id, password, salt FROM accounts WHERE username = ?";
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            stmt.setString(1, username);
+        var accountCreds = runner.query(sql, credsMapper, username);
 
-            try (var rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    var id = rs.getString("id");
-                    var hashedPassword = rs.getString("password");
-                    var salt = rs.getString("salt");
-
-                    var saltedPassword = inputPassword + salt;
-                    var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), hashedPassword);
-                    return result.verified ? id : null;
-                } else {
-                    return null;
-                }
-            }
-        });
+        if (accountCreds == null) {
+            return null;
+        }
+        var saltedPassword = inputPassword + accountCreds.getSalt();
+        var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), accountCreds.getPassword());
+        return result.verified ? accountCreds.getId() : null;
     }
 
     @Data
@@ -121,40 +119,26 @@ public class AccountDao {
         if (updt.getEloInc() == 0 && updt.getWinsInc() == 0 && updt.getLossesInc() == 0) {
             return; // noop
         }
-
         var sql = "UPDATE accounts SET elo = elo + ?, wins = wins + ?, losses = losses + ? WHERE id = ?";
-        Database.executeUpdate(ds, sql, (stmt) -> {
-            stmt.setFloat(1, updt.getEloInc());
-            stmt.setInt(2, updt.getWinsInc());
-            stmt.setInt(3, updt.getLossesInc());
-            stmt.setString(4, updt.getId());
-        });
+        runner.execute(sql, updt.getEloInc(), updt.getWinsInc(), updt.getLossesInc(), updt.getId());
     }
 
     public Stats getStats(String id) throws SQLException {
         var sql = "SELECT id, username, elo, wins, losses FROM accounts WHERE id = ? ";
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            stmt.setString(1, id);
-
-            var rs = stmt.executeQuery();
-            return Database.oneOfResults(rs, Stats::ofResult);
-        });
+        return runner.query(sql, statsMapper, id);
     }
 
     public List<Stats> getLeaderboard(Float eloCursor, int limit) throws SQLException {
-        var sql = String.format(
-            "SELECT id, username, elo, wins, losses FROM accounts WHERE 1 = 1 %s ORDER BY elo DESC LIMIT ?",
-            eloCursor != null ? " AND elo < ? " : "");
+        var sql = new StringBuilder("SELECT id, username, elo, wins, losses FROM accounts WHERE 1 = 1 ");
+        List<Object> params = new ArrayList<>();
 
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            var index = 1;
-            if (eloCursor != null) {
-                stmt.setFloat(index++, eloCursor);
-            }
-            stmt.setInt(index, limit);
+        if (eloCursor != null) {
+            sql.append(" AND elo < ? ");
+            params.add(eloCursor);
+        }
+        sql.append(" ORDER BY elo DESC LIMIT ?");
+        params.add(limit);
 
-            var rs = stmt.executeQuery();
-            return Database.manyOfResults(rs, Stats::ofResult);
-        });
+        return runner.query(sql.toString(), statsListMapper, params.toArray());
     }
 }

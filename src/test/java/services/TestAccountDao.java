@@ -3,6 +3,7 @@ package services;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import models.Stats;
+import org.apache.commons.dbutils.QueryRunner;
 import org.junit.jupiter.api.*;
 
 import java.security.NoSuchAlgorithmException;
@@ -30,11 +31,8 @@ public class TestAccountDao {
 
     @BeforeEach
     public void beforeEach() throws SQLException {
-        try (var conn = ds.getConnection()) {
-            try (var stmt = conn.prepareStatement("DROP ALL OBJECTS DELETE FILES")) {
-                stmt.execute();
-            }
-        }
+        var runner = new QueryRunner(ds);
+        runner.execute("DROP ALL OBJECTS DELETE FILES");
         accountDao.createTable();
         accountDao.createIndices();
     }

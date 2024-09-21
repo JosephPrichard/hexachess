@@ -27,7 +27,7 @@ public class WsRouter extends Jooby {
         var dictService = state.getDictService();
 
         ws("/duels/join/{id}", (ctx, configurer) -> {
-            var sessionId = ctx.query("sessionId").valueOrNull();
+            var sessionId = ctx.query("sessionId").valueOrNull(); // query is safe for secrets over a websocket when using wss
             var duelIdSlug = ctx.path("id");
             if (duelIdSlug.isMissing()) {
                 ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);

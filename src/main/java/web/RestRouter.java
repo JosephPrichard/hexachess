@@ -2,30 +2,11 @@ package web;
 
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
-import lombok.*;
 import models.Duel;
+import services.SessionService;
 import utils.ErrorResp;
 
 public class RestRouter extends Jooby {
-
-    @Data
-    @AllArgsConstructor
-    public static class CredentialsForm {
-        private String username;
-        private String password;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class SessionResult {
-        private String sessionId;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class CreateMatchResult {
-        private String id;
-    }
 
     public RestRouter(ServerState state) {
 
@@ -50,9 +31,9 @@ public class RestRouter extends Jooby {
             var sessionId = sessionService.createId();
             var cookie = sessionService.createCookie(sessionId);
             ctx.setResponseCookie(cookie);
-            dictService.setSession(sessionId, player);
+            dictService.setSession(sessionId, player, cookie.getMaxAge());
 
-            return new SessionResult(sessionId);
+            return sessionId;
         });
 
         post("/forms/login", ctx -> {
@@ -73,9 +54,9 @@ public class RestRouter extends Jooby {
             var sessionId = sessionService.createId();
             var cookie = sessionService.createCookie(sessionId);
             ctx.setResponseCookie(cookie);
-            dictService.setSession(sessionId, player);
+            dictService.setSession(sessionId, player, cookie.getMaxAge());
 
-            return new SessionResult(sessionId);
+            return sessionId;
         });
 
         get("/players/{id}/stats", ctx -> {
@@ -109,12 +90,12 @@ public class RestRouter extends Jooby {
         });
 
         get("/players/current", ctx -> {
-            var sessionId = ctx.cookie("sessionId").valueOrNull();
+            var sessionId = ctx.cookie(SessionService.COOKIE_NAME).valueOrNull();
             Duel.Player player = null;
             if (sessionId != null) {
                 player = dictService.getSession(sessionId);
             }
-            return dictService.getThenAddPlayers(player);
+            return dictService.retrieveAndAppend(player);
         });
 
         get("/games/history", ctx -> {
@@ -130,16 +111,12 @@ public class RestRouter extends Jooby {
             return historyDao.getHistories(whiteId, blackId, cursor);
         });
 
-        post("/forms/games/create", ctx -> {
-            var id = duelService.create();
-            return new CreateMatchResult(id);
-        });
+        post("/forms/games/create", ctx -> duelService.create());
 
         get("/games/current", ctx -> {
             var cursorParam = ctx.query("cursor");
-            var cursor = cursorParam.toOptional().orElse(null);
-
-            return duelService.getMany(cursor);
+            var cursor = cursorParam.isPresent() ? cursorParam.doubleValue() : null;
+            return duelService.getManyKeys(cursor);
         });
     }
 }

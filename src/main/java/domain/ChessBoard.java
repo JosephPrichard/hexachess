@@ -218,7 +218,7 @@ public class ChessBoard {
     }
 
     public String toString(Function<Hexagon, Boolean> isMove) {
-        var sb = new StringBuilder();
+        var sb = new StringBuilder("\n");
 
         for (int file = 0; file < ChessBoard.FILES; file++) {
             var ranksCount = RANKS_PER_FILE[file];

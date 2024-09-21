@@ -9,28 +9,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class History {
+    public static final int WIN = 0;
+    public static final int LOSS = 1;
+    public static final int DRAW = 2;
 
     private long id;
     private String whiteId;
     private String blackId;
     private String whiteName;
     private String blackName;
-    private GameResult result;
+    private int result;
     private String data;
     @EqualsAndHashCode.Exclude
     private Timestamp playedOn;
-
-    public static History ofResult(ResultSet rs) throws SQLException {
-        var id = rs.getLong("id");
-        var whiteId = rs.getString("whiteId");
-        var blackId = rs.getString("blackId");
-        var whiteName = rs.getString("whiteName");
-        var blackName = rs.getString("blackName");
-        var result = rs.getInt("result");
-        var data = rs.getString("data");
-        var playedOn = rs.getTimestamp("playedOn");
-        return new History(id, whiteId, blackId, whiteName, blackName, GameResult.fromInt(result), data, playedOn);
-    }
 }

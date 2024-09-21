@@ -97,7 +97,7 @@ public class DuelService {
         return match;
     }
 
-    public DictService.ScanResult getMany(String cursor) {
-        return dictService.scanDuels(cursor);
+    public DictService.GetDuelKeysResult getManyKeys(Double cursor) {
+        return dictService.getDuelKeys(cursor, 20);
     }
 }

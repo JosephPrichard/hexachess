@@ -8,6 +8,7 @@ import java.security.SecureRandom;
 public class SessionService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    public static final String COOKIE_NAME = "sessionId";
 
     public String createId() {
         var length = 100;
@@ -22,9 +23,10 @@ public class SessionService {
 
     public Cookie createCookie(String sessionId) {
         var maxAgeSecs = 6 * 60 * 60; // 6 hours
-        return new Cookie("sessionId", sessionId)
+        // our cookie is not set to http only because javascript must read it starting a websocket
+        return new Cookie(COOKIE_NAME, sessionId)
             .setSecure(true)
-            .setHttpOnly(true)
+//            .setHttpOnly(true)
             .setSameSite(SameSite.STRICT)
             .setMaxAge(maxAgeSecs);
     }

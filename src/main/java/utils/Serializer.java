@@ -11,6 +11,10 @@ import services.BroadcastService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import static utils.Log.LOGGER;
 
 public class Serializer {
 
@@ -22,7 +26,6 @@ public class Serializer {
         kryo.register(ChessGame.class);
         kryo.register(Duel.class);
         kryo.register(Duel.Player.class);
-        kryo.register(BroadcastService.Message.class);
         return kryo;
     });
 
@@ -31,19 +34,29 @@ public class Serializer {
     }
 
     public static <T> byte[] serialize(T obj) {
-        var rawBytes = new ByteArrayOutputStream();
-        try (var output = new Output(rawBytes)) {
-            var kryo = Serializer.get();
-            kryo.writeObject(output, obj);
+        try {
+            var rawBytes = new ByteArrayOutputStream();
+            try (var output = new Output(rawBytes)) {
+                var kryo = Serializer.get();
+                kryo.writeObject(output, obj);
+            }
+            return rawBytes.toByteArray();
+        } catch (Exception ex) {
+            LOGGER.error("Error occurred while deserializing: " + ex);
+            throw new RuntimeException(ex);
         }
-        return rawBytes.toByteArray();
     }
 
     public static <T> T deserialize(byte[] bytes, Class<T> clazz) {
-        var rawBytes = new ByteArrayInputStream(bytes);
-        try (var input = new Input(rawBytes)) {
-            var kryo = Serializer.get();
-            return kryo.readObject(input, clazz);
+        try {
+            var rawBytes = new ByteArrayInputStream(bytes);
+            try (var input = new Input(rawBytes)) {
+                var kryo = Serializer.get();
+                return kryo.readObject(input, clazz);
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Error occurred while deserializing: " + ex);
+            throw new RuntimeException(ex);
         }
     }
 }

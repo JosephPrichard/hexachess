@@ -1,6 +1,5 @@
 package router;
 
-import io.jooby.Context;
 import io.jooby.Cookie;
 import io.jooby.Formdata;
 import io.jooby.test.MockContext;
@@ -22,28 +21,10 @@ import static org.mockito.Mockito.*;
 
 public class TestRestRouter {
 
-    public static Formdata createForm(Context ctx, Object obj) {
-        var mockForm = Formdata.create(ctx);
-        var clazz = obj.getClass();
-        var fields = clazz.getDeclaredFields();
-        for (var field : fields) {
-            field.setAccessible(true);
-            try {
-               String fieldName = field.getName();
-               Object fieldValue = field.get(obj);
-               mockForm.put(fieldName, fieldValue.toString());
-            } catch (IllegalAccessException ex) {
-               throw new RuntimeException(ex);
-            }
-        }
-        return mockForm;
-    }
-
     @Test
     public void testPostSignup() throws SQLException, NoSuchAlgorithmException {
         // given
         var accountInst = new AccountDao.AccountInst("1", "testUser", "testPass", 1000, 3, 3);
-        var credentialsForm = new RestRouter.CredentialsForm("testUser", "testPass");
         var player = new Duel.Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
 
@@ -62,8 +43,12 @@ public class TestRestRouter {
         state.setDictService(mockDictService);
 
         var mockRouter = new MockRouter(new RestRouter(state));
+
         var mockContext = new MockContext();
-        mockContext.setForm(createForm(mockContext, credentialsForm));
+        var mockForm = Formdata.create(mockContext);
+        mockForm.put("username", "testUser");
+        mockForm.put("password", "testPass");
+        mockContext.setForm(mockForm);
 
         // when
         var response = new Object() { MockResponse value; };
@@ -72,24 +57,23 @@ public class TestRestRouter {
 
         // then
         verify(mockAccountDao, times(1)).insert("testUser", "testPass");
-        verify(mockDictService, times(1)).setSession(anyString(), eq(player));
+        verify(mockDictService, times(1)).setSession(anyString(), eq(player), anyLong());
         verify(mockSessionService, times(1)).createCookie("sessionToken");
 
-        Assertions.assertEquals(new RestRouter.SessionResult("sessionToken"), result.value());
+        Assertions.assertEquals("sessionToken", result.value());
         Assertions.assertEquals(actualCookie, cookie.toString());
     }
 
     @Test
     public void testPostLogin() throws SQLException {
         // given
-        var credentialsForm = new RestRouter.CredentialsForm("testUser", "testPass");
         var player = new Duel.Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
 
         var mockAccountDao = mock(AccountDao.class);
         var mockSessionService = mock(SessionService.class);
 
-        when(mockAccountDao.verify(credentialsForm.getUsername(), credentialsForm.getPassword())).thenReturn("1");
+        when(mockAccountDao.verify("testUser", "testPass")).thenReturn("1");
         when(mockSessionService.createId()).thenReturn("sessionToken");
         when(mockSessionService.createCookie("sessionToken")).thenReturn(cookie);
 
@@ -101,8 +85,12 @@ public class TestRestRouter {
         state.setDictService(mockDictService);
 
         var mockRouter = new MockRouter(new RestRouter(state));
+
         var mockContext = new MockContext();
-        mockContext.setForm(createForm(mockContext, credentialsForm));
+        var mockForm = Formdata.create(mockContext);
+        mockForm.put("username", "testUser");
+        mockForm.put("password", "testPass");
+        mockContext.setForm(mockForm);
 
         // when
         var response = new Object() { MockResponse value; };
@@ -111,10 +99,10 @@ public class TestRestRouter {
 
         // then
         verify(mockAccountDao, times(1)).verify("testUser", "testPass");
-        verify(mockDictService, times(1)).setSession(anyString(), eq(player));
+        verify(mockDictService, times(1)).setSession(anyString(), eq(player), anyLong());
         verify(mockSessionService, times(1)).createCookie("sessionToken");
 
-        Assertions.assertEquals(new RestRouter.SessionResult("sessionToken"), result.value());
+        Assertions.assertEquals("sessionToken", result.value());
         Assertions.assertEquals(actualCookie, cookie.toString());
     }
 
@@ -215,17 +203,17 @@ public class TestRestRouter {
 
         // then
         verify(mockDuelService, times(1)).create();
-        Assertions.assertEquals(new RestRouter.CreateMatchResult("test-id"), result.value());
+        Assertions.assertEquals("test-id", result.value());
     }
 
     @Test
     public void testGetManyDuels() {
         // given
         var state = new ServerState();
-        var scanResult = new DictService.ScanResult("22", List.of());
+        var scanResult = new DictService.GetDuelKeysResult(22d, List.of());
 
         var mockDuelService = mock(DuelService.class);
-        when(mockDuelService.getMany("12")).thenReturn(scanResult);
+        when(mockDuelService.getManyKeys(12d)).thenReturn(scanResult);
         state.setDuelService(mockDuelService);
 
         var mockRouter = new MockRouter(new RestRouter(state));
@@ -234,7 +222,7 @@ public class TestRestRouter {
         var result = mockRouter.get("/games/current", new MockContext().setQueryString("cursor=12"));
 
         // then
-        verify(mockDuelService, times(1)).getMany("12");
+        verify(mockDuelService, times(1)).getManyKeys(12d);
         Assertions.assertEquals(scanResult, result.value());
     }
 }

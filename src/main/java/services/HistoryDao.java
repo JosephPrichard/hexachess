@@ -2,22 +2,24 @@ package services;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import models.GameResult;
 import models.History;
-import models.Stats;
-import org.intellij.lang.annotations.Language;
-import utils.Database;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class HistoryDao {
-    private final DataSource ds;
+    private final QueryRunner runner;
+    private final ResultSetHandler<History> historyMapper = new BeanHandler<>(History.class);
+    private final ResultSetHandler<List<History>> historyListMapper = new BeanListHandler<>(History.class);
 
     public HistoryDao(DataSource ds) {
-        this.ds = ds;
+        runner = new QueryRunner(ds);
     }
 
     public void createTable() throws SQLException {
@@ -30,7 +32,7 @@ public class HistoryDao {
                 data VARCHAR,
                 playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
             """;
-        Database.executeUpdate(ds, sql);
+        runner.execute(sql);
     }
 
     public void createIndices() throws SQLException {
@@ -38,7 +40,7 @@ public class HistoryDao {
             CREATE INDEX idxWhiteId ON histories(whiteId);
             CREATE INDEX idxBlackId ON histories(blackId);
             """;
-        Database.executeUpdate(ds, sql);
+        runner.execute(sql);
     }
 
     @Data
@@ -46,18 +48,13 @@ public class HistoryDao {
     public static class HistoryInst {
         private String whiteId;
         private String blackId;
-        private GameResult result;
+        private int result;
         private String data;
     }
 
     public void insert(HistoryInst historyInst) throws SQLException  {
         var sql = "INSERT INTO histories (whiteId, blackId, result, data) VALUES (?, ?, ?, ?)";
-        Database.executeUpdate(ds, sql, (stmt) -> {
-            stmt.setString(1, historyInst.getWhiteId());
-            stmt.setString(2, historyInst.getBlackId());
-            stmt.setInt(3, historyInst.getResult().toInt());
-            stmt.setString(4, historyInst.getData());
-        });
+        runner.execute(sql, historyInst.getWhiteId(), historyInst.getBlackId(), historyInst.getResult(), historyInst.getData());
     }
 
     public History getHistory(long id) throws SQLException  {
@@ -78,16 +75,11 @@ public class HistoryDao {
             ON a2.id = h.blackId
             WHERE h.id = ?
             """;
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            stmt.setLong(1, id);
-
-            var rs = stmt.executeQuery();
-            return Database.oneOfResults(rs, History::ofResult);
-        });
+        return runner.query(sql, historyMapper, id);
     }
 
     public List<History> getHistories(String whiteId, String blackId, String cursor) throws SQLException {
-        var sql = String.format("""
+        var sql = new StringBuilder("""
             SELECT
                 h.id as id,
                 h.whiteId as whiteId,
@@ -102,35 +94,32 @@ public class HistoryDao {
             ON a1.id = h.whiteId
             INNER JOIN accounts as a2
             ON a2.id = h.blackId
-            WHERE 1 = 1 %s %s %s
-            ORDER BY h.id DESC LIMIT 20
-            """,
-            whiteId != null ? " AND h.whiteId = ? " : "",
-            blackId != null ? " AND h.blackId = ? " : "",
-            cursor != null ? " AND h.id < ? " : "");
+            WHERE 1 = 1
+            """);
+        List<Object> params = new ArrayList<>();
 
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            int index = 1;
-            if (whiteId != null) {
-                stmt.setString(index++, whiteId);
-            }
-            if (blackId != null) {
-                stmt.setString(index++, blackId);
-            }
-            if (cursor != null) {
-                stmt.setString(index, cursor);
-            }
+        if (whiteId != null) {
+            sql.append(" AND h.whiteId = ? ");
+            params.add(whiteId);
+        }
+        if (blackId != null) {
+            sql.append(" AND h.blackId = ? ");
+            params.add(blackId);
+        }
+        if (cursor != null) {
+            sql.append(" AND h.id < ? ");
+            params.add(cursor);
+        }
+        sql.append("ORDER BY h.id DESC LIMIT 20");
 
-            var rs = stmt.executeQuery();
-            return Database.manyOfResults(rs, History::ofResult);
-        });
+        return runner.query(sql.toString(), historyListMapper, params.toArray());
     }
 
     public List<History> getHistories(String accountId, String cursor) throws SQLException {
         assert accountId != null;
 
         // this query assumes that whiteId and blackId will be the same value, so we only need to join from whiteId
-        var sql = String.format("""
+        var sql = new StringBuilder("""
             SELECT
                 h.id as id,
                 h.whiteId as whiteId,
@@ -145,20 +134,18 @@ public class HistoryDao {
             ON a1.id = h.whiteId
             INNER JOIN accounts as a2
             ON a2.id = h.blackId
-            WHERE h.whiteId = ? OR h.blackId = ? %s
+            WHERE h.whiteId = ? OR h.blackId = ?
             ORDER BY h.id DESC LIMIT 20
-            """,
-            cursor != null ? " AND h.id < ? " : "");
+            """);
+        List<Object> params = new ArrayList<>();
 
-        return Database.executeQuery(ds, sql, (stmt) -> {
-            stmt.setString(1, accountId);
-            stmt.setString(2, accountId);
-            if (cursor != null) {
-                stmt.setString(3, cursor);
-            }
+        params.add(accountId);
+        params.add(accountId);
+        if (cursor != null) {
+            sql.append(" AND h.id < ? ");
+            params.add(cursor);
+        }
 
-            var rs = stmt.executeQuery();
-            return Database.manyOfResults(rs, History::ofResult);
-        });
+        return runner.query(sql.toString(), historyListMapper, params.toArray());
     }
 }
