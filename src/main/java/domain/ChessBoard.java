@@ -1,8 +1,6 @@
 package domain;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
@@ -51,12 +49,12 @@ public class ChessBoard {
         }
     }
 
-    private final byte[][] board = new byte[FILES][];
     private Turn turn;
+    private final byte[][] pieces = new byte[FILES][];
 
     public ChessBoard(Turn turn) {
-        for (int i = 0; i < board.length; i++) {
-            board[i] = new byte[RANKS_PER_FILE[i]];
+        for (int i = 0; i < pieces.length; i++) {
+            pieces[i] = new byte[RANKS_PER_FILE[i]];
         }
         this.turn = turn;
     }
@@ -124,11 +122,11 @@ public class ChessBoard {
     }
 
     public void setPiece(int file, int rank, byte piece) {
-        board[file][rank] = piece;
+        pieces[file][rank] = piece;
     }
 
     public byte getPiece(int file, int rank) {
-        return board[file][rank];
+        return pieces[file][rank];
     }
 
     public void setPiece(String notation, byte piece) {
@@ -174,11 +172,13 @@ public class ChessBoard {
     }
 
     public static boolean areOpposite(byte piece1, byte piece2) {
+        assert piece1 != EMPTY;
+        assert piece2 != EMPTY;
         return piece1 % 2 != piece2 % 2;
     }
 
     public boolean inBounds(int file, int rank) {
-        return file >= 0 && file < FILES && rank >= 0 && rank < board[file].length;
+        return file >= 0 && file < FILES && rank >= 0 && rank < pieces[file].length;
     }
 
     public boolean inBounds(Hexagon hex) {

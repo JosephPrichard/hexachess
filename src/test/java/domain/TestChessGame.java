@@ -1,5 +1,6 @@
 package domain;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -58,22 +59,23 @@ public class TestChessGame {
         var expectedMoves = Stream.of(expMoves)
             .map(Hexagon::fromNotation)
             .toList();
-        Assertions.assertEquals(expectedMoves, actualMoves);
+        Assertions.assertTrue(CollectionUtils.isEqualCollection(expectedMoves, actualMoves));
     }
 
     @Test
     public void testFindRookMoves() {
         // given
-        var game = ChessGame.start();
-
+        var game1 = ChessGame.start().setPiece("f6", BLACK_ROOK);
+        var game2 = ChessGame.start().setPiece("c8", BLACK_ROOK);
+        var game3 = ChessGame.start().setPiece("h4", BLACK_ROOK);
         // when
-        var centerMoves = game.findRookMoves(Hexagon.fromNotation("f6")).getMoves();
-        var leftMoves = game.findRookMoves(Hexagon.fromNotation("c8")).getMoves();
-        var rightMoves = game.findRookMoves(Hexagon.fromNotation("h4")).getMoves();
+        var centerMoves = game1.findRookMoves(Hexagon.fromNotation("f6")).getMoves();
+        var leftMoves = game2.findRookMoves(Hexagon.fromNotation("c8")).getMoves();
+        var rightMoves = game3.findRookMoves(Hexagon.fromNotation("h4")).getMoves();
 
-        System.out.println(game.getBoard().toMovesString(centerMoves));
-        System.out.println(game.getBoard().toMovesString(leftMoves));
-        System.out.println(game.getBoard().toMovesString(rightMoves));
+        System.out.println(game1.getBoard().toMovesString(centerMoves));
+        System.out.println(game2.getBoard().toMovesString(leftMoves));
+        System.out.println(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -90,16 +92,18 @@ public class TestChessGame {
     @Test
     public void testFindBishopMoves() {
         // given
-        var game = ChessGame.start();
+        var game1 = ChessGame.start().setPiece("f6", BLACK_BISHOP);
+        var game2 = ChessGame.start().setPiece("c8", BLACK_BISHOP);
+        var game3 = ChessGame.start().setPiece("h4", BLACK_BISHOP);
 
         // when
-        var centerMoves = game.findBishopMoves(Hexagon.fromNotation("f6")).getMoves();
-        var leftMoves = game.findBishopMoves(Hexagon.fromNotation("c8")).getMoves();
-        var rightMoves = game.findBishopMoves(Hexagon.fromNotation("h4")).getMoves();
+        var centerMoves = game1.findBishopMoves(Hexagon.fromNotation("f6")).getMoves();
+        var leftMoves = game2.findBishopMoves(Hexagon.fromNotation("c8")).getMoves();
+        var rightMoves = game3.findBishopMoves(Hexagon.fromNotation("h4")).getMoves();
 
-        System.out.println(game.getBoard().toMovesString(centerMoves));
-        System.out.println(game.getBoard().toMovesString(leftMoves));
-        System.out.println(game.getBoard().toMovesString(rightMoves));
+        System.out.println(game1.getBoard().toMovesString(centerMoves));
+        System.out.println(game2.getBoard().toMovesString(leftMoves));
+        System.out.println(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -115,16 +119,18 @@ public class TestChessGame {
     @Test
     public void testFindKingMoves() {
         // given
-        var game = ChessGame.empty();
+        var game1 = ChessGame.empty().setPiece("f6", WHITE_KING);
+        var game2 = ChessGame.empty().setPiece("d3", WHITE_KING);
+        var game3 = ChessGame.empty().setPiece("h7", WHITE_KING);
 
         // when
-        var centerMoves = game.findKingMoves(Hexagon.fromNotation("f6"));
-        var leftMoves = game.findKingMoves(Hexagon.fromNotation("d3"));
-        var rightMoves = game.findKingMoves(Hexagon.fromNotation("h7"));
+        var centerMoves = game1.findKingMoves(Hexagon.fromNotation("f6"));
+        var leftMoves = game2.findKingMoves(Hexagon.fromNotation("d3"));
+        var rightMoves = game2.findKingMoves(Hexagon.fromNotation("h7"));
 
-        System.out.println(game.getBoard().toMovesString(centerMoves));
-        System.out.println(game.getBoard().toMovesString(leftMoves));
-        System.out.println(game.getBoard().toMovesString(rightMoves));
+        System.out.println(game3.getBoard().toMovesString(centerMoves));
+        System.out.println(game3.getBoard().toMovesString(leftMoves));
+        System.out.println(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -140,16 +146,18 @@ public class TestChessGame {
     @Test
     public void testFindKnightMoves() {
         // given
-        var game = ChessGame.empty();
+        var game1 = ChessGame.empty().setPiece("f6", WHITE_KNIGHT);
+        var game2 = ChessGame.empty().setPiece("d3", WHITE_KNIGHT);
+        var game3 = ChessGame.empty().setPiece("h7", WHITE_KNIGHT);
 
         // when
-        var centerMoves = game.findKnightMoves(Hexagon.fromNotation("f6")).getMoves();
-        var leftMoves = game.findKnightMoves(Hexagon.fromNotation("d3")).getMoves();
-        var rightMoves = game.findKnightMoves(Hexagon.fromNotation("h7")).getMoves();
+        var centerMoves = game1.findKnightMoves(Hexagon.fromNotation("f6")).getMoves();
+        var leftMoves = game2.findKnightMoves(Hexagon.fromNotation("d3")).getMoves();
+        var rightMoves = game3.findKnightMoves(Hexagon.fromNotation("h7")).getMoves();
 
-        System.out.println(game.getBoard().toMovesString(centerMoves));
-        System.out.println(game.getBoard().toMovesString(leftMoves));
-        System.out.println(game.getBoard().toMovesString(rightMoves));
+        System.out.println(game1.getBoard().toMovesString(centerMoves));
+        System.out.println(game2.getBoard().toMovesString(leftMoves));
+        System.out.println(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -165,33 +173,34 @@ public class TestChessGame {
     @Test
     public void testFindPawnMoves() {
         // given
-        var game = ChessGame.empty();
-        game.getBoard().setPiece("c4", BLACK_PAWN);
-        game.getBoard().setPiece("e5", WHITE_PAWN);
+        var game1 = ChessGame.empty().setPiece("g4", WHITE_PAWN);
+        var game2 = ChessGame.empty()
+            .setPiece("c4", BLACK_KNIGHT)
+            .setPiece("e5", WHITE_KNIGHT)
+            .setPiece("d5", BLACK_PAWN);
 
         // when
-        var firstMoves = game.findPawnMoves(Hexagon.fromNotation("g4")).getMoves();
-        var takeMoves = game.findPawnMoves(Hexagon.fromNotation("d4")).getMoves();
+        var firstMoves = game1.findPawnMoves(Hexagon.fromNotation("g4"), Turn.WHITE).getMoves();
+        var takeMoves = game2.findPawnMoves(Hexagon.fromNotation("d5"), Turn.BLACK).getMoves();
 
-        System.out.println(game.getBoard().toMovesString(firstMoves));
-        System.out.println(game.getBoard().toMovesString(takeMoves));
+        System.out.println(game1.getBoard().toMovesString(firstMoves));
+        System.out.println(game2.getBoard().toMovesString(takeMoves));
 
         // then
-        assertPieceMoves(firstMoves, "g5");
+        assertPieceMoves(firstMoves, "g5", "g6");
 
-        assertPieceMoves(takeMoves, "d5", "e5");
+        assertPieceMoves(takeMoves, "d4", "e5");
     }
 
     @Test
     public void testIsCheckmate() {
-        var game = ChessGame.empty();
-        var board = game.getBoard();
-        board.setPiece("f6", WHITE_KING);
-        board.setPiece("f4", BLACK_QUEEN);
-        board.setPiece("f8", BLACK_QUEEN);
-        board.setPiece("b4", BLACK_BISHOP);
-        board.setPiece("j4", BLACK_BISHOP);
-        board.setPiece("f9", BLACK_KING);
+        var game = ChessGame.empty()
+            .setPiece("f6", WHITE_KING)
+            .setPiece("f4", BLACK_QUEEN)
+            .setPiece("f8", BLACK_QUEEN)
+            .setPiece("b4", BLACK_BISHOP)
+            .setPiece("j4", BLACK_BISHOP)
+            .setPiece("f9", BLACK_KING);
 
         game.initPieceMoves();
 

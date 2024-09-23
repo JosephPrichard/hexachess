@@ -1,10 +1,9 @@
 package domain;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,6 +76,11 @@ public class ChessGame {
 
     public List<PieceMoves> getOppositeMoves() {
         return getPieceMoves(board.turn().opposite());
+    }
+
+    public ChessGame setPiece(String notation, byte piece) {
+        board.setPiece(notation, piece);
+        return this;
     }
 
     public boolean isValidMove(Move move) {
@@ -194,7 +198,7 @@ public class ChessGame {
                     case WHITE_BISHOP, BLACK_BISHOP -> moves.add(findBishopMoves(hex));
                     case WHITE_QUEEN, BLACK_QUEEN -> moves.add(findQueenMoves(hex));
                     case WHITE_KNIGHT, BLACK_KNIGHT -> moves.add(findKnightMoves(hex));
-                    case WHITE_PAWN, BLACK_PAWN -> moves.add(findPawnMoves(hex));
+                    case WHITE_PAWN, BLACK_PAWN -> moves.add(findPawnMoves(hex, turn));
                     case WHITE_KING, BLACK_KING -> {} // this is a no-op, we find the king moves in a separate function
                     default -> throw new IllegalStateException("Board has invalid piece " + piece + " at hexagon " + hex);
                 }
@@ -229,16 +233,19 @@ public class ChessGame {
         return findOffsetMoves(hex, KING_OFFSETS, isNotAttacked);
     }
 
-    private static final Direction[] AHEAD = {Direction.UP};
-    private static final Direction[] TAKE_LEFT = {Direction.UP_LEFT};
-    private static final Direction[] TAKE_RIGHT = {Direction.UP_RIGHT};
+    private static final Direction[] WHITE_AHEAD = {Direction.UP};
+    private static final Direction[] WHITE_TAKE_LEFT = {Direction.UP_LEFT};
+    private static final Direction[] WHITE_TAKE_RIGHT = {Direction.UP_RIGHT};
+    private static final Direction[] BLACK_AHEAD = {Direction.DOWN};
+    private static final Direction[] BLACK_TAKE_LEFT = {Direction.DOWN_LEFT};
+    private static final Direction[] BLACK_TAKE_RIGHT = {Direction.DOWN_RIGHT};
 
-    public PieceMoves findPawnMoves(Hexagon hex) {
+    public PieceMoves findPawnMoves(Hexagon hex, Turn turn) {
         var basePiece = board.getPiece(hex);
         List<Hexagon> moves = new ArrayList<>();
 
         // we can always move one rank ahead on the same file
-        var move1 = hex.walk(AHEAD);
+        var move1 = hex.walk(turn.isWhite() ? WHITE_AHEAD : BLACK_AHEAD);
         if (board.inBounds(move1)) {
             var piece = board.getPiece(move1);
             if (piece == EMPTY) {
@@ -247,7 +254,7 @@ public class ChessGame {
         }
 
         // we can move a rank ahead of that if we haven't moved yet!
-        var move2 = move1.walk(AHEAD);
+        var move2 = move1.walk(turn.isWhite() ? WHITE_AHEAD : BLACK_AHEAD);
         if (board.inBounds(move2) && !hasPawnMoved(hex, basePiece)) {
             var piece = board.getPiece(move2);
             if (piece == EMPTY) {
@@ -256,7 +263,7 @@ public class ChessGame {
         }
 
         // we can also take in adjacent ranks
-        var move3 = hex.walk(TAKE_LEFT);
+        var move3 = hex.walk(turn.isWhite() ? WHITE_TAKE_LEFT : BLACK_TAKE_LEFT);
         if (board.inBounds(move3)) {
             var piece = board.getPiece(move3);
             if (piece != EMPTY && areOpposite(basePiece, piece)) {
@@ -264,7 +271,7 @@ public class ChessGame {
             }
         }
 
-        var move4 = hex.walk(TAKE_RIGHT);
+        var move4 = hex.walk(turn.isWhite() ? WHITE_TAKE_RIGHT : BLACK_TAKE_RIGHT);
         if (board.inBounds(move4)) {
             var piece = board.getPiece(move4);
             if (piece != EMPTY && areOpposite(basePiece, piece)) {
@@ -322,7 +329,7 @@ public class ChessGame {
             }
 
             var piece = board.getPiece(move);
-            var canMoveHex = areOpposite(basePiece, piece) || piece == EMPTY;
+            var canMoveHex = piece == EMPTY || areOpposite(basePiece, piece); // short-circuiting prevents us from checking if an empty piece is opposite
 
             if (canMoveHex && canMoveTo.apply(move)) {
                 moves.add(move);

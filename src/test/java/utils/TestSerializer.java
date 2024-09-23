@@ -14,7 +14,7 @@ public class TestSerializer {
     @Test
     public void testRoundTrip() {
         // given
-        var match = Duel.start();
+        var match = Duel.start("1");
 
         // when
         var rawBytesOut = new ByteArrayOutputStream();

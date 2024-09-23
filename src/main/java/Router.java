@@ -3,7 +3,6 @@ import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.jooby.Jooby;
-import io.jooby.jackson.JacksonModule;
 import redis.clients.jedis.JedisPooled;
 import web.RestRouter;
 import web.ServerState;
@@ -20,7 +19,7 @@ public class Router extends Jooby {
 
     public static Router init() {
         try {
-            var envMap = readEnv();
+            var envMap = readEnvConfig();
 
             var dbUrl = envMap.get("DB_URL");
             var dbUser = envMap.get("DB_USER");
@@ -50,7 +49,7 @@ public class Router extends Jooby {
         }
     }
 
-    private static Map<String, String> readEnv() {
+    private static Map<String, String> readEnvConfig() {
         var inputStream = Router.class.getClassLoader().getResourceAsStream(".env");
         if (inputStream == null) {
             throw new IllegalArgumentException(".env file is not found");
@@ -75,7 +74,6 @@ public class Router extends Jooby {
     }
 
     public Router(ServerState state) {
-        install(new JacksonModule());
         mount(new RestRouter(state));
         mount(new WsRouter(state));
     }

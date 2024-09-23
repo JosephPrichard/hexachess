@@ -3,13 +3,11 @@ package web;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import models.Duel;
-import services.SessionService;
 import utils.ErrorResp;
 
 public class RestRouter extends Jooby {
 
     public RestRouter(ServerState state) {
-
         var jsonMapper = state.getJsonMapper();
         var accountDao = state.getAccountDao();
         var dictService = state.getDictService();
@@ -89,15 +87,6 @@ public class RestRouter extends Jooby {
             return historyDao.getHistories(accountId, cursor);
         });
 
-        get("/players/current", ctx -> {
-            var sessionId = ctx.cookie(SessionService.COOKIE_NAME).valueOrNull();
-            Duel.Player player = null;
-            if (sessionId != null) {
-                player = dictService.getSession(sessionId);
-            }
-            return dictService.retrieveAndAppend(player);
-        });
-
         get("/games/history", ctx -> {
             var whiteIdParam = ctx.query("whiteId");
             var whiteId = whiteIdParam.toOptional().orElse(null);
@@ -111,7 +100,18 @@ public class RestRouter extends Jooby {
             return historyDao.getHistories(whiteId, blackId, cursor);
         });
 
-        post("/forms/games/create", ctx -> duelService.create());
+        post("/forms/games/create", ctx -> {
+            var colorParam = ctx.query("color").toOptional().orElse(null);
+
+            Boolean isFirstPlayerWhite = null;
+            if (colorParam != null && colorParam.equals("white")) {
+                isFirstPlayerWhite = true;
+            } else if (colorParam != null && colorParam.equals("black")) {
+                isFirstPlayerWhite = false;
+            }
+
+            return duelService.create(isFirstPlayerWhite);
+        });
 
         get("/games/current", ctx -> {
             var cursorParam = ctx.query("cursor");

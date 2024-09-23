@@ -7,12 +7,9 @@ import domain.ChessBoard;
 import domain.ChessGame;
 import domain.Hexagon;
 import models.Duel;
-import services.BroadcastService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static utils.Log.LOGGER;
 

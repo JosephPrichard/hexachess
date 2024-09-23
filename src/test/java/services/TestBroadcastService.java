@@ -3,11 +3,9 @@ package services;
 import io.jooby.WebSocket;
 import org.junit.jupiter.api.*;
 import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.JedisPubSub;
 import redis.embedded.RedisServer;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 
@@ -46,9 +44,6 @@ public class TestBroadcastService {
 
         var subscriber1 = broadcastService1.startListenSubscribe();
         var subscriber2 = broadcastService2.startListenSubscribe();
-
-        // wait for a bit to make sure the broadcast service is listening...
-        Thread.sleep(1000);
 
         // when
         broadcastService1.subscribeLocal("id", mockWs1);

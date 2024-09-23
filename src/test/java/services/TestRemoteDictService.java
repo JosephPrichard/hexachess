@@ -13,18 +13,18 @@ import java.util.List;
 // so it is disabled as to not be run automatically with all other tests
 @Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestDictService {
+public class TestRemoteDictService {
 
     private RedisServer redisServer;
     private JedisPooled jedis;
-    private DictService dictService;
+    private RemoteDictService dictService;
 
     @BeforeAll
     public void beforeAll() {
         redisServer = new RedisServer(6379);
         redisServer.start();
         jedis = new JedisPooled("localhost", 6379);
-        dictService = new DictService(jedis);
+        dictService = new RemoteDictService(jedis);
     }
 
     @BeforeEach
@@ -40,17 +40,17 @@ public class TestDictService {
     @Test
     public void testDuelUpdate() {
         var id = "test-id";
-        dictService.setDuel(id, Duel.start());
+        dictService.setDuel(id, Duel.start(id));
 
-        var firstMatch = dictService.getDuel(id);
-        Assertions.assertEquals(Duel.start(), firstMatch);
+        var firstDuel = dictService.getDuel(id);
+        Assertions.assertEquals(Duel.start(id), firstDuel);
 
-        firstMatch.getGame().getBoard().setPiece("a1", ChessBoard.BLACK_QUEEN);
-        dictService.setDuel(id, firstMatch);
+        firstDuel.getGame().getBoard().setPiece("a1", ChessBoard.BLACK_QUEEN);
+        dictService.setDuel(id, firstDuel);
 
-        var secondMatch = dictService.getDuel(id);
+        var secondDuel = dictService.getDuel(id);
 
-        Assertions.assertEquals(firstMatch, secondMatch);
+        Assertions.assertEquals(firstDuel, secondDuel);
     }
 
     @Test
@@ -103,23 +103,5 @@ public class TestDictService {
         // then
         Assertions.assertEquals(player1, actualPlayer1);
         Assertions.assertNull(actualPlayer2);
-    }
-
-    @Test
-    public void testGetPlayers() {
-        // given
-        var player1 = new Duel.Player("id1", "name1");
-        var player2 = new Duel.Player("id2", "name2");
-        var player3 = new Duel.Player("id3", "name3");
-
-        // when
-        var actualPlayers1 = dictService.retrieveAndAppend(player1);
-        var actualPlayers2 = dictService.retrieveAndAppend(player2);
-        var actualPlayers3 = dictService.retrieveAndAppend(player3, Duration.ofSeconds(1).toMillis());
-
-        // then
-        Assertions.assertEquals(List.of(player1), actualPlayers1);
-        Assertions.assertEquals(List.of(player1, player2), actualPlayers2);
-        Assertions.assertEquals(List.of(player3), actualPlayers3);
     }
 }

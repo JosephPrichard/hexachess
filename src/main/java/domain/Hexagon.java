@@ -1,6 +1,8 @@
 package domain;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +11,7 @@ import static domain.ChessBoard.FILES;
 import static domain.ChessBoard.RANKS_PER_FILE;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class Hexagon {
 
@@ -22,6 +25,7 @@ public class Hexagon {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class Move {
         private Hexagon from;
@@ -29,6 +33,7 @@ public class Hexagon {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class PieceMoves {
         private Hexagon hex;

@@ -23,78 +23,89 @@ public class DuelService {
         this.dictService = dictService;
     }
 
-    public String create() {
-        var game = Duel.start();
+    public String create(Boolean isFirstPlayerWhite) {
         var id = UUID.randomUUID().toString();
-        dictService.setDuel(id, game);
+        var duel = Duel.start(id);
+
+        duel.setIsFirstPlayerWhite(isFirstPlayerWhite);
+        duel.getGame().initPieceMoves();
+
+        dictService.setDuel(id, duel);
         return id;
     }
 
-    public Duel join(String matchId, Duel.Player player) {
-        var match = dictService.getDuel(matchId);
-        if (match == null) {
+    public Duel join(String duelId, Duel.Player player) {
+        var duel = dictService.getDuel(duelId);
+        if (duel == null) {
             return null;
         }
 
-        var hasWhitePlayer = match.getBlackPlayer() != null;
-        var hasBlackPlayer = match.getWhitePlayer() != null;
+        var hasWhitePlayer = duel.getWhitePlayer() != null;
+        var hasBlackPlayer = duel.getBlackPlayer() != null;
 
-        if (hasWhitePlayer && hasBlackPlayer) {
-            var chooseWhite = rand.nextInt() % 2 == 0;
+        if (!hasWhitePlayer && !hasBlackPlayer) {
+            // neither player, so join as either
+            var isFirstPlayerWhite = duel.getIsFirstPlayerWhite();
+            boolean chooseWhite = isFirstPlayerWhite == null ? rand.nextInt() % 2 == 0 : isFirstPlayerWhite;
             if (chooseWhite) {
-                match.setWhitePlayer(player);
+                duel.setWhitePlayer(player);
+                LOGGER.info(String.format("Player %s joined as white player %s", player.getId(), duelId));
             } else {
-                match.setBlackPlayer(player);
+                duel.setBlackPlayer(player);
+                LOGGER.info(String.format("Player %s joined as black player %s", player.getId(), duelId));
             }
-        } else if (hasWhitePlayer) {
-            match.setBlackPlayer(player);
-        } else if (hasBlackPlayer) {
-            match.setWhitePlayer(player);
+        } else if (!hasBlackPlayer) {
+            // no black player, so join as black
+            duel.setBlackPlayer(player);
+            LOGGER.info(String.format("Player %s joined as black player %s", player.getId(), duelId));
+        } else if (!hasWhitePlayer) {
+            // no white player, so join as white
+            duel.setWhitePlayer(player);
+            LOGGER.info(String.format("Player %s joined as white player %s", player.getId(), duelId));
         } else {
-            // we can't join this game, so just return the match data
-            return match;
+            // both players, so we cannot join... just return the duel data to view
+            return duel;
         }
 
-        dictService.setDuel(matchId, match);
-        return match;
+        return dictService.setDuel(duelId, duel);
     }
 
-    public Duel makeMove(String matchId, Duel.Player player, Hexagon.Move move) {
-        var match = dictService.getDuel(matchId);
-        if (match == null) {
+    public Duel makeMove(String duelId, Duel.Player player, Hexagon.Move move) {
+        var duel = dictService.getDuel(duelId);
+        if (duel == null) {
             return null;
         }
 
-        var game = match.getGame();
+        var game = duel.getGame();
 
-        if (match.isEnded()) {
-            LOGGER.info(String.format("Move attempted on ended game %s", matchId));
+        if (duel.isEnded()) {
+            LOGGER.info(String.format("Move attempted on ended duel %s", duelId));
             throw new MoveException("Cannot make a move on a game that is over!");
         }
-        if (!match.isPlayerTurn(player)) {
-            LOGGER.info(String.format("Player %s is cannot make move on game %s it isn't their turn", player, matchId));
+        if (!duel.isPlayerTurn(player)) {
+            LOGGER.info(String.format("Player %s cannot make move on duel %s, it isn't their turn", player, duelId));
             throw new MoveException("Cannot make a move when it isn't your turn!");
         }
         if (!game.isValidMove(move)) {
-            LOGGER.info(String.format("Move %s on game %s is invalid", move, matchId));
+            LOGGER.info(String.format("Player %s made invalid move %s on duel %s", player, move, duelId));
             throw new MoveException("Cannot make an invalid move!");
         }
 
         game.makeMove(move);
+        game.initPieceMoves();
 
-        dictService.setDuel(matchId, match);
-        return match;
+        LOGGER.info(String.format("Player %s made move %s on duel %s", player, move, duelId));
+        return dictService.setDuel(duelId, duel);
     }
 
-    public Duel forfeit(String matchId) {
-        var match = dictService.getDuel(matchId);
-        if (match == null) {
+    public Duel forfeit(String duelId) {
+        var duel = dictService.getDuel(duelId);
+        if (duel == null) {
             return null;
         }
 
-        match.setEnded(true);
-        dictService.setDuel(matchId, match);
-        return match;
+        duel.setEnded(true);
+        return dictService.setDuel(duelId, duel);
     }
 
     public DictService.GetDuelKeysResult getManyKeys(Double cursor) {

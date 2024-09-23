@@ -9,9 +9,9 @@ import models.Duel;
 import models.Stats;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import services.*;
 import web.RestRouter;
 import web.ServerState;
-import services.*;
 
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
@@ -193,7 +193,7 @@ public class TestRestRouter {
         var state = new ServerState();
 
         var mockDuelService = mock(DuelService.class);
-        when(mockDuelService.create()).thenReturn("test-id");
+        when(mockDuelService.create(null)).thenReturn("test-id");
         state.setDuelService(mockDuelService);
 
         var mockRouter = new MockRouter(new RestRouter(state));
@@ -202,7 +202,7 @@ public class TestRestRouter {
         var result = mockRouter.post("/forms/games/create");
 
         // then
-        verify(mockDuelService, times(1)).create();
+        verify(mockDuelService, times(1)).create(null);
         Assertions.assertEquals("test-id", result.value());
     }
 
