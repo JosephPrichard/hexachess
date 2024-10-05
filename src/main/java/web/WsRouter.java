@@ -8,35 +8,38 @@ import io.jooby.WebSocket;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import models.Duel;
-import services.DuelService;
+import models.GameState;
+import models.Player;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import services.GameService;
 import utils.ErrorResp;
+import utils.Threading;
 
 import static utils.Log.LOGGER;
 
 public class WsRouter extends Jooby {
 
-    public WsRouter(ServerState state) {
+    public WsRouter(State state) {
         var jsonMapper = state.getJsonMapper();
-        var broadcastService = state.getBroadcastService();
-        var dictService = state.getDictService();
+        var broadcastService = state.getBroadcaster();
+        var dictionary = state.getRemoteDict();
 
         ws("/games/join/{id}", (ctx, configurer) -> {
             var sessionId = ctx.query("sessionId").valueOrNull(); // query is safe for secrets over a websocket when using wss
-            var duelIdSlug = ctx.path("id");
-            if (duelIdSlug.isMissing()) {
+            var gameIdSlug = ctx.path("id");
+            if (gameIdSlug.isMissing()) {
                 ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);
             }
 
-            var duelId = duelIdSlug.toString();
-            var player = dictService.getSessionOrDefault(sessionId);
+            var gameId = gameIdSlug.toString();
+            var player = dictionary.getSessionOrDefault(sessionId);
             assert player != null;
 
-            configurer.onConnect(handleDuelConnect(state, duelId, player));
+            configurer.onConnect(handleGameConnect(state, gameId, player));
 
-            configurer.onMessage(handleDuelMessage(state, duelId, player));
+            configurer.onMessage(handleGameMessage(state, gameId, player));
 
-            configurer.onClose((ws, statusCode) -> broadcastService.unsubscribeLocal(duelId, ws));
+            configurer.onClose((ws, statusCode) -> broadcastService.unsubscribe(gameId, ws));
         });
     }
 
@@ -58,106 +61,105 @@ public class WsRouter extends Jooby {
         public static final int ERROR = 0;
         public static final int FORFEIT = 1;
         public static final int JOIN = 2;
-        public static final int STATE = 3;
+        public static final int MOVE = 3;
 
         private int type;
-        private String message;
-        private Duel.Player player; // only used for join, says who the receiver is playing as
-        private Duel duel; // only used for state and join
+        private String message; // only used for error
+        private Player player; // only used for join, says who the joining player is
+        private Hexagon.Move move; // only used for move
+        private GameState gameState; // the current state of the game being played
 
         public static OutputMsg ofError(String message) {
-            return new OutputMsg(ERROR, message, null,null);
+            return new OutputMsg(ERROR, message, null, null, null);
         }
 
-        public static OutputMsg ofForfeit() {
-            return new OutputMsg(FORFEIT, null, null,null);
+        public static OutputMsg ofForfeit(GameState gameState) {
+            return new OutputMsg(FORFEIT, null, null, null, gameState);
         }
 
-        public static OutputMsg ofJoin(Duel.Player player, Duel duel) {
-            return new OutputMsg(JOIN, null, player, duel);
+        public static OutputMsg ofJoin(Player player, GameState gameState) {
+            return new OutputMsg(JOIN, null, player, null, gameState);
         }
 
-        public static OutputMsg ofState(Duel duel) {
-            return new OutputMsg(STATE, null,null, duel);
+        public static OutputMsg ofMove(GameState gameState, Hexagon.Move move) {
+            return new OutputMsg(MOVE, null, null, move, gameState);
         }
     }
 
-    public static WebSocket.OnConnect handleDuelConnect(ServerState state, String duelId, Duel.Player player) {
-        var duelService = state.getDuelService();
-        var socketExchange = state.getBroadcastService();
+    public WebSocket.OnConnect handleGameConnect(State state, String gameId, Player player) {
+        var gameService = state.getGameService();
+        var socketExchange = state.getBroadcaster();
         var jsonMapper = state.getJsonMapper();
 
-        return ws -> {
+        return ws -> Threading.VIRTUAL_EXECUTOR.execute(() -> {
             try {
-                var duel = duelService.join(duelId, player);
-                if (duel == null) {
+                var game = gameService.join(gameId, player);
+                if (game == null) {
                     // we can't join... so just send an error and then disconnect
-                    var resp = OutputMsg.ofError("Invalid message type");
-                    var jsonOutput = jsonMapper.writeValueAsString(resp);
+                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError("Invalid message type"));
                     ws.send(jsonOutput);
                     ws.close();
                     return;
                 }
-                socketExchange.subscribeLocal(duelId, ws);
+                socketExchange.subscribe(gameId, ws);
                 // the joiner needs a snapshot of what the game actually looks like when joining!
-                var jsonResult = jsonMapper.writeValueAsString(OutputMsg.ofJoin(player, duel));
+                var jsonResult = jsonMapper.writeValueAsString(OutputMsg.ofJoin(player, game));
                 ws.send(jsonResult);
-                LOGGER.info(String.format("Player %s connected to duel %s", player.getId(), duelId));
-            } catch (JsonProcessingException e) {
-                // if we can't write the json back to the client, we can't really do anything so just log and close
-                LOGGER.error(String.format("Failed to serialize json: %s", e.getMessage()));
+                LOGGER.info(String.format("Player %s connected to game %s", player.getId(), gameId));
+            } catch (Exception e) {
+                // if we encounter some unknown error or maybe json failure, we can't really do anything so just log and close the connection
+                LOGGER.error(String.format("Fatal exception occurred: %s", e.getMessage()));
                 ws.close();
             }
-        };
+        });
     }
 
-    public static WebSocket.OnMessage handleDuelMessage(ServerState state, String duelId, Duel.Player player) {
-        var duelService = state.getDuelService();
-        var broadcastService = state.getBroadcastService();
+    public WebSocket.OnMessage handleGameMessage(State state, String gameId, Player player) {
+        var gameService = state.getGameService();
+        var broadcastService = state.getBroadcaster();
         var jsonMapper = state.getJsonMapper();
 
-        return (ws, message) -> {
+        return (ws, message) -> Threading.VIRTUAL_EXECUTOR.execute(() -> {
             try {
                 try {
-                    LOGGER.info(String.format("Received message from player %s, %s on duel %s", player.getId(), message.value(), duelId));
+                    LOGGER.info(String.format("Received message from player %s, %s on game %s", player.getId(), message.value(), gameId));
                     var input = jsonMapper.readValue(message.value(), InputMsg.class);
                     var type = input.getType();
                     switch (type) {
                         // handle the message cases by serializing the json and broadcasting to all listening clients
                         case InputMsg.FORFEIT -> {
-                            var match = duelService.forfeit(duelId);
-                            var jsonOutput = jsonMapper.writeValueAsString(match);
-                            broadcastService.broadcastGlobal(duelId, jsonOutput);
+                            var game = gameService.forfeit(gameId, player);
+                            var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofForfeit(game));
+                            broadcastService.broadcast(gameId, jsonOutput);
                         }
                         case InputMsg.MOVE -> {
-                            var duel = duelService.makeMove(duelId, player, input.getMove());
-                            var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofState(duel));
-                            broadcastService.broadcastGlobal(duelId, jsonOutput);
+                            var move = input.getMove();
+                            var game = gameService.makeMove(gameId, player, move);
+                            var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofMove(game, move));
+                            broadcastService.broadcast(gameId, jsonOutput);
                         }
                         // unknown messages involve sending an error back to the og sender
                         default -> {
-                            var resp = OutputMsg.ofError(String.format("Invalid message type: %d", type));
+                            var resp = OutputMsg.ofError("Invalid message type: %d" + type);
                             var jsonOutput = jsonMapper.writeValueAsString(resp);
                             ws.send(jsonOutput);
                         }
                     }
-                } catch (DuelService.MoveException e) {
+                } catch (GameService.MoveException e) {
                     // handle an exceptional case that happens while attempting to make a move by sending an error back to og sender
-                    var resp = OutputMsg.ofError(e.getMessage());
-                    var jsonOutput = jsonMapper.writeValueAsString(resp);
+                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError(e.getMessage()));
                     ws.send(jsonOutput);
-                }  catch (Exception e) {
+                } catch (Exception e) {
                     // handle any unknown error that happens during message processing by sending an error back to og sender
-                    var resp = OutputMsg.ofError("An unexpected error has occurred");
-                    var jsonOutput = jsonMapper.writeValueAsString(resp);
+                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError("An unexpected error has occurred"));
                     ws.send(jsonOutput);
-                    LOGGER.error("Unexpected error occurred in websocket message handler " + e.getMessage());
+                    LOGGER.error("Unexpected error occurred in websocket message handler " + ExceptionUtils.getStackTrace(e));
                 }
             } catch (JsonProcessingException e) {
                 // if we can't write the json back to the client, we can't really do anything so just log and close
-                LOGGER.error(String.format("Failed to serialize json: %s", e.getMessage()));
+                LOGGER.error("Failed to serialize json: " + ExceptionUtils.getStackTrace(e));
                 ws.close();
             }
-        };
+        });
     }
 }

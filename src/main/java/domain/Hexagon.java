@@ -30,6 +30,10 @@ public class Hexagon {
     public static class Move {
         private Hexagon from;
         private Hexagon to;
+
+        public Move deepCopy() {
+            return new Move(from.deepCopy(), to.deepCopy());
+        }
     }
 
     @Data
@@ -38,6 +42,10 @@ public class Hexagon {
     public static class PieceMoves {
         private Hexagon hex;
         private List<Hexagon> moves;
+
+        public PieceMoves deepCopy() {
+            return new PieceMoves(hex.deepCopy(), moves.stream().map(Hexagon::deepCopy).toList());
+        }
     }
 
     public static final Hexagon[] ORDERED = getOrdered();
@@ -47,6 +55,10 @@ public class Hexagon {
     private int rank;
 
     public static Hexagon of(int file, int rank) {
+        return new Hexagon(file, rank);
+    }
+
+    public Hexagon deepCopy() {
         return new Hexagon(file, rank);
     }
 

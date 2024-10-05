@@ -2,7 +2,7 @@ package services;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import models.History;
+import models.HistoryEntity;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
@@ -15,8 +15,8 @@ import java.util.List;
 
 public class HistoryDao {
     private final QueryRunner runner;
-    private final ResultSetHandler<History> historyMapper = new BeanHandler<>(History.class);
-    private final ResultSetHandler<List<History>> historyListMapper = new BeanListHandler<>(History.class);
+    private final ResultSetHandler<HistoryEntity> historyMapper = new BeanHandler<>(HistoryEntity.class);
+    private final ResultSetHandler<List<HistoryEntity>> historyListMapper = new BeanListHandler<>(HistoryEntity.class);
 
     public HistoryDao(DataSource ds) {
         runner = new QueryRunner(ds);
@@ -26,38 +26,23 @@ public class HistoryDao {
         var sql = """
             CREATE TABLE histories (
                 id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                whiteId VARCHAR,
-                blackId VARCHAR,
-                result INTEGER,
-                data VARCHAR,
-                playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
-            """;
-        runner.execute(sql);
-    }
-
-    public void createIndices() throws SQLException {
-        var sql = """
+                whiteId VARCHAR NOT NULL,
+                blackId VARCHAR NOT NULL,
+                result INTEGER NOT NULL,
+                data BYTEA NOT NULL,
+                playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
             CREATE INDEX idxWhiteId ON histories(whiteId);
             CREATE INDEX idxBlackId ON histories(blackId);
             """;
         runner.execute(sql);
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class HistoryInst {
-        private String whiteId;
-        private String blackId;
-        private int result;
-        private String data;
+    public void insert(String whiteId, String blackId, int result, byte[] data) throws SQLException  {
+        var sql = "BEGIN; INSERT INTO histories (whiteId, blackId, result, data) VALUES (?, ?, ?, ?); END";
+        runner.execute(sql, whiteId, blackId, result, data);
     }
 
-    public void insert(HistoryInst historyInst) throws SQLException  {
-        var sql = "INSERT INTO histories (whiteId, blackId, result, data) VALUES (?, ?, ?, ?)";
-        runner.execute(sql, historyInst.getWhiteId(), historyInst.getBlackId(), historyInst.getResult(), historyInst.getData());
-    }
-
-    public History getHistory(long id) throws SQLException  {
+    public HistoryEntity getHistory(long id) throws SQLException  {
         var sql = """
             SELECT
                 h.id as id,
@@ -78,7 +63,7 @@ public class HistoryDao {
         return runner.query(sql, historyMapper, id);
     }
 
-    public List<History> getHistories(String whiteId, String blackId, String cursor) throws SQLException {
+    public List<HistoryEntity> getHistories(String whiteId, String blackId, String cursor) throws SQLException {
         var sql = new StringBuilder("""
             SELECT
                 h.id as id,
@@ -115,7 +100,7 @@ public class HistoryDao {
         return runner.query(sql.toString(), historyListMapper, params.toArray());
     }
 
-    public List<History> getHistories(String accountId, String cursor) throws SQLException {
+    public List<HistoryEntity> getHistories(String accountId, String cursor) throws SQLException {
         assert accountId != null;
 
         // this query assumes that whiteId and blackId will be the same value, so we only need to join from whiteId

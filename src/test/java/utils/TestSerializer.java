@@ -2,7 +2,7 @@ package utils;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import models.Duel;
+import models.GameState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ public class TestSerializer {
     @Test
     public void testRoundTrip() {
         // given
-        var match = Duel.start("1");
+        var match = GameState.startWithGame("1");
 
         // when
         var rawBytesOut = new ByteArrayOutputStream();
@@ -23,14 +23,14 @@ public class TestSerializer {
             kryo.writeObject(output, match);
         }
 
-        Duel afterDuel;
+        GameState afterGameState;
         var rawBytesIn = new ByteArrayInputStream(rawBytesOut.toByteArray());
         try (var input = new Input(rawBytesIn)) {
             var kryo = Serializer.get();
-            afterDuel = kryo.readObject(input, Duel.class);
+            afterGameState = kryo.readObject(input, GameState.class);
         }
 
         // then
-        Assertions.assertEquals(match, afterDuel);
+        Assertions.assertEquals(match, afterGameState);
     }
 }

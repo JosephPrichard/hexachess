@@ -1,15 +1,18 @@
 package domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
 import static domain.Hexagon.PieceMoves;
 
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
 public class ChessBoard {
 
     // white pieces have an odd parity
@@ -50,13 +53,19 @@ public class ChessBoard {
     }
 
     private Turn turn;
-    private final byte[][] pieces = new byte[FILES][];
+    private final byte[][] pieces;
 
     public ChessBoard(Turn turn) {
+        pieces = new byte[FILES][];
         for (int i = 0; i < pieces.length; i++) {
             pieces[i] = new byte[RANKS_PER_FILE[i]];
         }
         this.turn = turn;
+    }
+
+    public ChessBoard copy() {
+        return new ChessBoard(turn,
+            Arrays.stream(pieces).map(byte[]::clone).toArray(byte[][]::new));
     }
 
     public static ChessBoard initial() {

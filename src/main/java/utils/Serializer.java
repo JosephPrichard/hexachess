@@ -6,7 +6,8 @@ import com.esotericsoftware.kryo.io.Output;
 import domain.ChessBoard;
 import domain.ChessGame;
 import domain.Hexagon;
-import models.Duel;
+import models.GameState;
+import models.Player;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,8 +22,7 @@ public class Serializer {
         kryo.register(Hexagon.PieceMoves.class);
         kryo.register(ChessBoard.class);
         kryo.register(ChessGame.class);
-        kryo.register(Duel.class);
-        kryo.register(Duel.Player.class);
+        kryo.register(GameState.class);
         return kryo;
     });
 

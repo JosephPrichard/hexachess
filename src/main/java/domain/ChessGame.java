@@ -1,9 +1,9 @@
 package domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +15,7 @@ import static domain.Hexagon.*;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class ChessGame {
 
     private final static Direction[][] ROOK_OFFSETS = {
@@ -54,6 +55,12 @@ public class ChessGame {
     private List<PieceMoves> whiteMoves = null;
     private List<PieceMoves> blackMoves = null;
 
+    public ChessGame deepCopy() {
+        return new ChessGame(board != null ? board.copy() : null,
+            whiteMoves != null ? whiteMoves.stream().map(PieceMoves::deepCopy).toList() : null,
+            blackMoves != null ? blackMoves.stream().map(PieceMoves::deepCopy).toList() : null);
+    }
+
     public static ChessGame start() {
         return new ChessGame(ChessBoard.initial());
     }
@@ -84,6 +91,7 @@ public class ChessGame {
     }
 
     public boolean isValidMove(Move move) {
+        assert move != null;
         assert whiteMoves != null;
         assert blackMoves != null;
 

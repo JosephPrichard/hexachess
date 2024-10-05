@@ -1,5 +1,6 @@
 package domain;
 
+import models.GameState;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import java.util.stream.Stream;
 
 import static domain.ChessBoard.*;
 import static domain.Hexagon.PieceMoves;
+import static utils.Log.LOGGER;
 
 public class TestChessGame {
 
@@ -54,11 +56,8 @@ public class TestChessGame {
         Assertions.assertEquals(WHITE_BISHOP, piece);
     }
 
-    // assert only checking REGULAR piece moves
     private void assertPieceMoves(List<Hexagon> actualMoves, String... expMoves) {
-        var expectedMoves = Stream.of(expMoves)
-            .map(Hexagon::fromNotation)
-            .toList();
+        var expectedMoves = Stream.of(expMoves).map(Hexagon::fromNotation).toList();
         Assertions.assertTrue(CollectionUtils.isEqualCollection(expectedMoves, actualMoves));
     }
 
@@ -73,9 +72,9 @@ public class TestChessGame {
         var leftMoves = game2.findRookMoves(Hexagon.fromNotation("c8")).getMoves();
         var rightMoves = game3.findRookMoves(Hexagon.fromNotation("h4")).getMoves();
 
-        System.out.println(game1.getBoard().toMovesString(centerMoves));
-        System.out.println(game2.getBoard().toMovesString(leftMoves));
-        System.out.println(game3.getBoard().toMovesString(rightMoves));
+        LOGGER.info(game1.getBoard().toMovesString(centerMoves));
+        LOGGER.info(game2.getBoard().toMovesString(leftMoves));
+        LOGGER.info(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -101,9 +100,9 @@ public class TestChessGame {
         var leftMoves = game2.findBishopMoves(Hexagon.fromNotation("c8")).getMoves();
         var rightMoves = game3.findBishopMoves(Hexagon.fromNotation("h4")).getMoves();
 
-        System.out.println(game1.getBoard().toMovesString(centerMoves));
-        System.out.println(game2.getBoard().toMovesString(leftMoves));
-        System.out.println(game3.getBoard().toMovesString(rightMoves));
+        LOGGER.info(game1.getBoard().toMovesString(centerMoves));
+        LOGGER.info(game2.getBoard().toMovesString(leftMoves));
+        LOGGER.info(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -128,9 +127,9 @@ public class TestChessGame {
         var leftMoves = game2.findKingMoves(Hexagon.fromNotation("d3"));
         var rightMoves = game2.findKingMoves(Hexagon.fromNotation("h7"));
 
-        System.out.println(game3.getBoard().toMovesString(centerMoves));
-        System.out.println(game3.getBoard().toMovesString(leftMoves));
-        System.out.println(game3.getBoard().toMovesString(rightMoves));
+        LOGGER.info(game3.getBoard().toMovesString(centerMoves));
+        LOGGER.info(game3.getBoard().toMovesString(leftMoves));
+        LOGGER.info(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -155,9 +154,9 @@ public class TestChessGame {
         var leftMoves = game2.findKnightMoves(Hexagon.fromNotation("d3")).getMoves();
         var rightMoves = game3.findKnightMoves(Hexagon.fromNotation("h7")).getMoves();
 
-        System.out.println(game1.getBoard().toMovesString(centerMoves));
-        System.out.println(game2.getBoard().toMovesString(leftMoves));
-        System.out.println(game3.getBoard().toMovesString(rightMoves));
+        LOGGER.info(game1.getBoard().toMovesString(centerMoves));
+        LOGGER.info(game2.getBoard().toMovesString(leftMoves));
+        LOGGER.info(game3.getBoard().toMovesString(rightMoves));
 
         // then
         assertPieceMoves(centerMoves,
@@ -183,8 +182,8 @@ public class TestChessGame {
         var firstMoves = game1.findPawnMoves(Hexagon.fromNotation("g4"), Turn.WHITE).getMoves();
         var takeMoves = game2.findPawnMoves(Hexagon.fromNotation("d5"), Turn.BLACK).getMoves();
 
-        System.out.println(game1.getBoard().toMovesString(firstMoves));
-        System.out.println(game2.getBoard().toMovesString(takeMoves));
+        LOGGER.info(game1.getBoard().toMovesString(firstMoves));
+        LOGGER.info(game2.getBoard().toMovesString(takeMoves));
 
         // then
         assertPieceMoves(firstMoves, "g5", "g6");
@@ -204,8 +203,8 @@ public class TestChessGame {
 
         game.initPieceMoves();
 
-        System.out.println(game.getBoard());
-        System.out.println(game.getBoard().toPieceMovesString(game.getOppositeMoves()));
+        LOGGER.info(game.getBoard().toString());
+        LOGGER.info(game.getBoard().toPieceMovesString(game.getOppositeMoves()));
 
         var isCheckmate = game.isCheckmate();
         Assertions.assertTrue(isCheckmate);
@@ -226,5 +225,12 @@ public class TestChessGame {
         List<PieceMoves> expectedOppMoves = new ArrayList<>();
         Assertions.assertEquals(expectedCurrMoves, currMoves);
         Assertions.assertEquals(expectedOppMoves, oppMoves);
+    }
+
+    @Test
+    public void testCopy() {
+        var gameState = GameState.startWithGame("id");
+        gameState.getGame().initPieceMoves();
+        Assertions.assertEquals(gameState, gameState.deepCopy());
     }
 }
