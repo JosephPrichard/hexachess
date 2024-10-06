@@ -1,12 +1,12 @@
 html {
-    background: linear-gradient(to bottom, rgb(44, 44, 44), 20%, rgb(24, 21, 20)) no-repeat;
+    background:  rgb(33, 33, 33);
     height: 100%;
 }
 
 body {
     font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu;
     font-size: 15px;
-    color: rgb(180, 180, 180);
+    color: rgb(190, 190, 190);
     padding: 0;
     margin: 0;
     height: 100%;
@@ -21,16 +21,8 @@ a:hover {
     text-decoration: underline;
 }
 
-.blue-color {
-    color: rgb(0, 150, 255);
-}
-
-.blue-hover:hover {
-    color: rgb(0, 150, 255);
-}
-
 .title-lg {
-    font-size: 24px;
+    font-size: 26px;
     padding: 20px;
 }
 
@@ -42,6 +34,7 @@ a:hover {
     padding-left: 10%;
     padding-right: 10%;
     user-select: none;
+    font-weight: 500;
 }
 
 .app-title {
@@ -58,10 +51,14 @@ a:hover {
 }
 
 .banner-elem {
-    font-size: 20px;
+    font-size: 18px;
     margin-left: 20px;
     margin-right: 20px;
     cursor: pointer;
+}
+
+.banner-elem:hover {
+    text-decoration: none;
 }
 
 .center-horizontal-container {
@@ -72,13 +69,18 @@ a:hover {
 }
 
 .table-container {
-    width: 60%;
+    width: 100%;
 }
 
 table {
     border-collapse: collapse;
     border-radius: 26px;
-    border: 1px solid rgb(65, 65, 65);
+
+    /* this is a hack to draw a border radius around a table */
+    border-collapse: collapse;
+    border-radius: 3px;
+    border-style: hidden;
+    box-shadow: 0 0 0 1px rgb(52, 52, 52);
 }
 
 th, td {
@@ -86,22 +88,37 @@ th, td {
     padding-left: 24px;
     padding-right: 24px;
     text-align: left;
-    border-left: 1px solid rgb(65, 65, 65);
-    border-right: 1px solid rgb(65, 65, 65);
+    font-weight: 500;
 }
 
-tr:nth-child(odd) {
-    background: linear-gradient(to bottom, rgb(65, 65, 65), 20%, rgb(52, 52, 52)) no-repeat;
-}
-
-tr:first-child {
-    box-shadow: rgba(0, 0, 0, 0.24) 0px 4px 8px;
-    background: linear-gradient(to bottom, rgb(65, 65, 65), 20%, rgb(59, 56, 52)) no-repeat;
+tr:hover {
+    cursor: pointer;
+    background: rgb(52, 52, 52);
 }
 
 tr {
-    box-shadow: rgba(0, 0, 0, 0.24) 0px 1px 3px;
-    height: 40px;
+    background: rgb(42, 42, 42);
+}
+
+tr:first-child {
+    background: rgb(23, 23, 23);
+}
+
+tr:nth-child(odd) {
+/*    background: rgb(52, 52, 52);*/
+}
+
+th:first-child {
+    border-top-left-radius: 3px;
+}
+
+th:last-child {
+    border-top-right-radius: 3px;
+}
+
+tr {
+/*    box-shadow: rgba(0, 0, 0, 0.24) 0px 1px 3px;*/
+    height: 45px;
 }
 
 .text-lg {
@@ -124,51 +141,111 @@ tr {
     max-width: 350px;
     border-radius: 8px;
     padding: 30px;
-    background-color: rgb(42, 39, 36);
+    background-color: rgb(42, 42, 42);
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-}
-
-.button-link-grey {
-    min-width: 130px;
-    height: 40px;
-    color: #fff;
-    padding: 5px 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    display: inline-block;
-    outline: none;
-    border-radius: 5px;
-    border: none;
-    background-color: rgb(56, 54, 51);
-    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: fit-content;
-}
-
-.button-link-grey {
-    box-shadow: 0 3px #495057;
-    top: 1px;
-}
-
-.button-link-grey {
-    box-shadow: 0 0 #495057;
-    top: 5px;
-}
-
-.button-link-grey:hover {
-    text-decoration: none;
-    background-color: rgb(76, 74, 71);
 }
 
 .flag {
     position: relative;
     top: 3px;
-    margin-left: 10px;
-    height: 15px;
+    margin-left: 3px;
+    height: 13px;
     width: auto;
+}
+
+.wrapper {
+    min-width: 50%;
+}
+
+.form-wrapper {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 20px;
+    display: block;
+}
+
+label {
+    font-size: 20px;
+}
+
+input {
+    border-radius: 6px;
+    line-height: 34px;
+    font-size: 16px;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 0;
+    padding-bottom: 0;
+    min-width: 100px;
+    width: 50%;
+    margin: 0;
+}
+
+.color-wrapper {
+    color: white;
+    background-color: rgba(0, 150, 255, 0.75);
+    padding: 15px;
+    padding-top: 11px;
+    padding-bottom: 11px;
+    border-radius: 6px;
+}
+
+.button-grey {
+    min-width: 130px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border-radius: 5px;
+    text-align: center;
+    width: fit-content;
+    padding: 5px 10px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    outline: none;
+    border: none;
+    background: #495057;
+    box-shadow: 0 5px rgb(52, 52, 52);
+    text-decoration: none;
+}
+
+.button-grey:hover {
+    box-shadow: 0 3px rgb(52, 52, 52);
+    top: 1px;
+    text-decoration: none;
+}
+
+.button-grey:active {
+    box-shadow: 0 0 rgb(52, 52, 52);
+    top: 5px;
+}
+
+.button-scaled {
+    margin-top: 20px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.button-submit {
+    top: 2px;
+    height: 37px;
+    margin-left: 10px;
+}
+
+.color-hover:hover {
+    color: rgb(255, 255, 255);
+}
+
+.red-color {
+    color: rgb(225,30,30);
+}
+
+.green-color {
+    color: #78b13f;
+}
+
+.yellow-color {
+    color: yellow;
 }

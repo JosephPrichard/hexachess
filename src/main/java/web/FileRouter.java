@@ -5,7 +5,7 @@ import io.jooby.exception.NotFoundException;
 
 public class FileRouter extends Jooby {
     public FileRouter(State state) {
-        var filesMap = state.getFilesMap();
+        var filesMap = state.getFiles();
 
         get("/files/flags/{name}", ctx -> {
             var name = ctx.path("name").toOptional().orElse("");

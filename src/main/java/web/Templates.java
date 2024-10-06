@@ -1,6 +1,8 @@
 package web;
 
 import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Helper;
+import com.github.jknack.handlebars.Options;
 import com.github.jknack.handlebars.Template;
 import lombok.Getter;
 
@@ -14,9 +16,9 @@ public class Templates {
     private final Template registerTemplate;
     private final Template leaderboardTemplate;
     private final Template profileTemplate;
-    private final Template currentGames;
-    private final Template historyGames;
-    private final Template searchPlayers;
+    private final Template currentTemplate;
+    private final Template historyTemplate;
+    private final Template searchTemplate;
     private final Template notFoundTemplate;
 
     public Templates(Handlebars handlebars) throws IOException {
@@ -25,9 +27,22 @@ public class Templates {
         loginTemplate = handlebars.compile("login");
         leaderboardTemplate = handlebars.compile("leaderboard");
         profileTemplate = handlebars.compile("profile");
-        currentGames = handlebars.compile("current-games");
-        historyGames = handlebars.compile("history-games");
-        searchPlayers = handlebars.compile("search-players");
+        currentTemplate = handlebars.compile("current-games");
+        historyTemplate = handlebars.compile("history-games");
+        searchTemplate = handlebars.compile("search-players");
         notFoundTemplate = handlebars.compile("404");
+
+        registerHelpers(handlebars);
+    }
+
+    public static void registerHelpers(Handlebars handlebars) {
+        handlebars.registerHelper("percentColor", (Integer context, Options options) -> {
+            if (context > 50) {
+                return "green-color";
+            } else if (context < 50) {
+                return "red-color";
+            }
+            return "yellow-color";
+        });
     }
 }

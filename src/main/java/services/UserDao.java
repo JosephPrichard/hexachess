@@ -55,40 +55,32 @@ public class UserDao {
     public void defProcUpdateStats() throws SQLException {
         var sql = """
             CREATE FUNCTION probability(IN elo1 NUMERIC, IN elo2 NUMERIC)
-            RETURNS NUMERIC
+                RETURNS NUMERIC
             LANGUAGE plpgsql
             AS $$
             BEGIN
                 RETURN 1.0 / (1.0 + POWER(10, (elo1 - elo2) / 400.0));
             END $$;
             
-            CREATE PROCEDURE update_stats(IN winnerId VARCHAR, IN loserId VARCHAR)
+            CREATE PROCEDURE update_stat(IN winnerId VARCHAR, IN loserId VARCHAR)
             LANGUAGE plpgsql
             AS $$
             DECLARE
-             winnerElo NUMERIC;
-             loserElo NUMERIC;
-             probWinner NUMERIC;
-             probLoser NUMERIC;
-             eloK NUMERIC;
+                winnerElo NUMERIC;
+                loserElo NUMERIC;
             BEGIN
-                eloK = 30;
-            
                 SELECT elo INTO winnerElo
                 FROM accounts WHERE id = winnerId;
             
                 SELECT elo INTO loserElo
                 FROM accounts WHERE id = loserId;
             
-                probWinner = probability(loserElo, winnerElo);
-                probLoser = probability(winnerElo, loserElo);
-            
                 UPDATE accounts
-                SET elo = winnerElo + (eloK * (1 - probWinner)), wins = wins + 1
+                SET elo = winnerElo + (30 * (1 - probability(loserElo, winnerElo))), wins = wins + 1
                 WHERE id = winnerId;
             
                 UPDATE accounts
-                SET elo = loserElo - (eloK * probLoser), losses = losses + 1
+                SET elo = loserElo - (30 * probability(winnerElo, loserElo)), losses = losses + 1
                 WHERE id = loserId;
             END $$;
             """;
@@ -156,14 +148,13 @@ public class UserDao {
         runner.execute(sql, username, country, id);
     }
 
-
     public void updateStats(String winnerId, String loserId) throws SQLException {
         var sql = "CALL update_stats(?, ?)";
         runner.execute(sql, winnerId, loserId);
     }
 
     public StatsEntity getStats(String id) throws SQLException {
-        var sql = "SELECT id, username, country, elo, wins, losses FROM accounts WHERE id = ? ";
+        var sql = "SELECT id, username, country, elo, wins, losses FROM accounts WHERE id = ?";
         return runner.query(sql, statsMapper, id);
     }
 
@@ -182,7 +173,10 @@ public class UserDao {
     }
 
     public List<StatsEntity> searchPlayerStats(String name) throws SQLException {
-        var sql = "SELECT id, username, country, elo, wins, losses, (username <-> ?) as rank FROM accounts WHERE username % ? ORDER BY rank";
+        var sql = """
+            SELECT id, username, country, elo, wins, losses, (username <-> ?) as rank
+            FROM accounts WHERE username % ? ORDER BY rank LIMIT 50
+            """;
         return runner.query(sql, statsListMapper, name, name);
     }
 

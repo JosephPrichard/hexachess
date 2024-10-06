@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Search - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    {{> banner }}
+    <div class="center-horizontal-container">
+        <div class="title-lg">
+            Search
+        </div>
+        <div class="wrapper">
+            <form class="form-wrapper">
+                <label for="username">Username</label>
+                <br>
+                <input id="username" name="username" value="{{searchText}}"/>
+                <input class="button-grey button-submit" type="submit" value="Submit">
+            </form>
+            {{#if searchText}}
+            {{> stats-table }}
+            {{/if}}
+        </div>
+    </div>
+</body>
+</html>

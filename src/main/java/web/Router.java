@@ -31,10 +31,12 @@ public class Router extends Jooby {
             loader.setPrefix("/templates");
             loader.setSuffix(".hbs");
 
+            var files = Config.createFilesMap();
+
             var handlebars = new Handlebars(loader);
             var jedis = new JedisPooled(redisHost, redisPort);
 
-            var state = new State(jedis, ds, handlebars);
+            var state = new State(jedis, ds, handlebars, files);
 //            var state = new State(null, null, null);
             return new Router(state);
         } catch (Exception ex) {

@@ -7,9 +7,17 @@ import web.Router;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+import static utils.Log.LOGGER;
 
 public class Config {
 
@@ -33,7 +41,7 @@ public class Config {
         }
         return envMap;
     }
-    public static HikariDataSource createDataSource(Map<String, String> envMap) throws IOException {
+    public static HikariDataSource createDataSource(Map<String, String> envMap) {
         var dbUrl = envMap.get("DB_URL");
         var dbUser = envMap.get("DB_USER");
         var dbPassword = envMap.get("DB_PASSWORD");
@@ -47,5 +55,31 @@ public class Config {
         config.setDriverClassName("org.postgresql.Driver");
 
         return new HikariDataSource(config);
+    }
+
+    public static Map<String, byte[]> createFilesMap() {
+        Map<String, byte[]> files = new HashMap<>();
+
+        var classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            var resourcePath = Paths.get(Objects.requireNonNull(classLoader.getResource("flags")).toURI());
+            try (Stream<Path> paths = Files.walk(resourcePath)) {
+                paths.filter(Files::isRegularFile).forEach(filePath -> {
+                    try (var inputStream = classLoader.getResourceAsStream("flags/" + filePath.getFileName().toString())) {
+                        if (inputStream != null) {
+                            files.put(filePath.getFileName().toString(), inputStream.readAllBytes());
+                        }
+                    } catch (IOException ex) {
+                        LOGGER.error("Error occurred while stepping through files " + ex);
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+        } catch (URISyntaxException | IOException ex) {
+            LOGGER.error("Error occurred while creating files map " + ex);
+            throw new RuntimeException(ex);
+        }
+
+        return files;
     }
 }

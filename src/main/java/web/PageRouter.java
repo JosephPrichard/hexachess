@@ -4,8 +4,12 @@ import io.jooby.Jooby;
 import io.jooby.MediaType;
 import io.jooby.StatusCode;
 import models.LeaderboardView;
+import models.SearchView;
+import models.StatsView;
 import utils.ErrorResp;
 import utils.Threading;
+
+import java.util.List;
 
 public class PageRouter extends Jooby {
 
@@ -42,16 +46,27 @@ public class PageRouter extends Jooby {
         });
 
         get("/leaderboard", ctx -> {
-            var cursorQuery = ctx.query("cursor");
-            var cursor = cursorQuery.toOptional().map(Float::parseFloat).orElse(null);
+            var cursor = ctx.query("cursor").toOptional().map(Float::parseFloat).orElse(null);
             var entityList = accountDao.getLeaderboard(cursor, 20);
 
-            var leaderboardTemplate = templates.getLeaderboardTemplate();
-            var viewList = LeaderboardView.StatsView.fromEntityList(entityList);
-            return leaderboardTemplate.apply(new LeaderboardView(viewList));
+            var template = templates.getLeaderboardTemplate();
+            var viewList = StatsView.fromSortedEntityList(entityList);
+            return template.apply(new LeaderboardView(viewList));
         });
 
-        get("/player/{id}/history", ctx -> {
+        get("/players/search", ctx -> {
+            var name = ctx.query("username").toOptional().orElse("");
+            var template = templates.getSearchTemplate();
+            if (!name.isEmpty()) {
+                var entityList = accountDao.searchPlayerStats(name);
+                var viewList = StatsView.fromEntityList(entityList);
+                return template.apply(new SearchView(name, viewList));
+            } else {
+                return template.apply(new SearchView(name, List.of()));
+            }
+        });
+
+        get("/players/{id}/history", ctx -> {
             var accountIdSlug = ctx.path("id");
             if (accountIdSlug.isMissing()) {
                 ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);

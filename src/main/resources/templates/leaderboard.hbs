@@ -5,36 +5,14 @@
     <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
-   {{> banner }}
+    {{> banner }}
     <div class="center-horizontal-container">
         <div class="title-lg">
             Leaderboard
         </div>
-        <table class="table-container">
-            <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>Elo</th>
-                <th>Wins</th>
-                <th>Losses</th>
-                <th>Total</th>
-            </tr>
-            {{#each statsList as |stats|}}
-            <tr>
-                <td style="width: 10%">{{stats.place}}</td>
-                <td style="width: 45%" class="width-lg blue-color">
-                    <a href="/profile/{{stats.id}}">
-                        {{stats.username}}
-                    </a>
-                    <img class="flag" src="/files/flags/{{stats.country}}.png" alt=""/>
-                </td>
-                <td style="width: 15%" class="width-sm">{{stats.elo}}</td>
-                <td style="width: 10%" class="width-sm">{{stats.wins}}</td>
-                <td style="width: 10%" class="width-sm">{{stats.losses}}</td>
-                <td style="width: 10%" class="width-sm">{{stats.total}}</td>
-            </tr>
-            {{/each}}
-        </table>
+        <div class="wrapper">
+            {{> stats-table }}
+        </div>
     </div>
 </body>
 </html>
