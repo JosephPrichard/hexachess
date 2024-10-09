@@ -8,6 +8,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class SearchView {
-    private String searchText;
-    private List<StatsView> statsList;
+    String searchText;
+    List<StatsView> statsList;
 }

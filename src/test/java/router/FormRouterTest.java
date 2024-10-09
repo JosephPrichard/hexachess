@@ -8,10 +8,12 @@ import io.jooby.test.MockRouter;
 import models.Player;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import services.GameService;
 import services.UserDao;
 import services.RemoteDict;
 import services.SessionService;
 import web.FormRouter;
+import web.PageRouter;
 import web.State;
 
 import java.security.NoSuchAlgorithmException;
@@ -23,11 +25,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class TestFormRouter {
+public class FormRouterTest {
     @Test
     public void testPostSignup() throws SQLException, NoSuchAlgorithmException {
         // given
-        var accountInst = new UserDao.AccountInst("1", "testUser", "testPassword", "USA", 1000, 3, 3);
+        var accountInst = new UserDao.UserInst("1", "testUser", "testPassword", "USA", 1000, 3, 3);
         var player = new Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
 
@@ -107,5 +109,24 @@ public class TestFormRouter {
 
         Assertions.assertEquals("sessionToken", result.value(String.class));
         Assertions.assertEquals(actualCookie, cookie.toString());
+    }
+
+    @Test
+    public void testPostCreateGame() {
+        // given
+        var state = new State();
+
+        var mockgameService = mock(GameService.class);
+        when(mockgameService.create(null)).thenReturn("test-id");
+        state.setGameService(mockgameService);
+
+        var mockRouter = new MockRouter(new FormRouter(state));
+
+        // when
+        var result = mockRouter.post("/forms/games/create");
+
+        // then
+        verify(mockgameService, times(1)).create(null);
+        Assertions.assertEquals("test-id", result.value());
     }
 }

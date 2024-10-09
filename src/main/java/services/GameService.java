@@ -104,7 +104,7 @@ public class GameService {
         if (game.isCheckmate()) {
             state.setEnded(true);
             var isWhiteWin = !game.getBoard().turn().isWhite(); // white wins if its checkmate when it's NOT their turn
-            onFinishGame(state, isWhiteWin);
+            Threading.VIRTUAL_EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
         }
 
         LOGGER.info(String.format("%s made move %s on game %s", player, move, gameId));
@@ -112,24 +112,23 @@ public class GameService {
     }
 
     public void onFinishGame(GameState state, boolean isWhiteWin) {
-        Threading.VIRTUAL_EXECUTOR.execute(() -> {
-            try {
-                var whiteId =  state.getWhitePlayer().getId();
-                var blackId = state.getBlackPlayer().getId();
+        try {
+            var whiteId =  state.getWhitePlayer().getId();
+            var blackId = state.getBlackPlayer().getId();
+            var result = isWhiteWin ? HistoryEntity.WHITE_WIN : HistoryEntity.WHITE_LOSS;
+            var winId = isWhiteWin ? whiteId : blackId;
+            var loseId = isWhiteWin ? blackId : whiteId;
 
-                var whiteWinInc = isWhiteWin ? 1 : 0;
-                var whiteLossInc = isWhiteWin ? 0 : 1;
+            var moveHistoryData = Serializer.serialize(state.getMoveHistory());
 
-                var moveHistoryData = Serializer.serialize(state.getMoveHistory());
-
-                historyDao.insert(whiteId, blackId, isWhiteWin ? HistoryEntity.WHITE_WIN : HistoryEntity.WHITE_LOSS, moveHistoryData);
-//                userDao.updateStats(
-//                    new UserDao.StatsUpdt(whiteId, 0, whiteWinInc, whiteLossInc),
-//                    new UserDao.StatsUpdt(blackId, 0, whiteLossInc, whiteWinInc));
-            } catch (Exception ex) {
-                LOGGER.info("Failed to persist game results to database in background thread " + ex);
-            }
-        });
+            var changeSet = userDao.updateStatsUsingResult(winId, loseId);
+            remoteDict.updateLeaderboardUser(
+                new RemoteDict.EloChangeSet(winId, changeSet.winElo),
+                new RemoteDict.EloChangeSet(loseId, changeSet.loseElo));
+            historyDao.insert(whiteId, blackId, result, moveHistoryData, changeSet.getWinElo(), changeSet.getLoseElo());
+        } catch (Exception ex) {
+            LOGGER.info("Failed to persist game results to database in background thread " + ex);
+        }
     }
 
     public GameState forfeit(String gameId, Player player) {

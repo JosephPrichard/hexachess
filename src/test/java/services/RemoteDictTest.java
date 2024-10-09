@@ -8,9 +8,11 @@ import org.junit.jupiter.api.*;
 import redis.clients.jedis.JedisPooled;
 import redis.embedded.RedisServer;
 
+import java.util.List;
+
 // this is an integration test that runs against a real redis instance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestRemoteDict {
+public class RemoteDictTest {
 
     private RedisServer redisServer;
     private JedisPooled jedis;
@@ -100,5 +102,40 @@ public class TestRemoteDict {
         // then
         Assertions.assertEquals(player1, actualPlayer1);
         Assertions.assertNull(actualPlayer2);
+    }
+
+    @Test
+    public void testLeaderboard() {
+        remoteDict.updateLeaderboardUser("user1", 930);
+        remoteDict.updateLeaderboardUser("user2", 995);
+        remoteDict.updateLeaderboardUser("user3", 1000);
+        remoteDict.updateLeaderboardUser("user4", 1500);
+
+        int rank1 = remoteDict.getLeaderboardRank("user1");
+        int rank2 = remoteDict.getLeaderboardRank("user2");
+        int rank3 = remoteDict.getLeaderboardRank("user3");
+        int rank4 = remoteDict.getLeaderboardRank("user4");
+
+        var leaderboard1 = remoteDict.getLeaderboard(1, 4);
+
+        remoteDict.updateLeaderboardUser(new RemoteDict.EloChangeSet("user2", 30));
+        var leaderboard2 = remoteDict.getLeaderboard(2, 2);
+
+        Assertions.assertEquals(1, rank1);
+        Assertions.assertEquals(2, rank2);
+        Assertions.assertEquals(3, rank3);
+        Assertions.assertEquals(4, rank4);
+
+        var expectedLeaderboard1 = List.of(
+            new RemoteDict.RankedUser("user1", 930, 1),
+            new RemoteDict.RankedUser("user2", 995, 2),
+            new RemoteDict.RankedUser("user3", 1000, 3),
+            new RemoteDict.RankedUser("user4", 1500, 4));
+        Assertions.assertEquals(expectedLeaderboard1, leaderboard1);
+
+        var expectedLeaderboard2 = List.of(
+            new RemoteDict.RankedUser("user3", 1000, 2),
+            new RemoteDict.RankedUser("user2", 1025, 3));
+        Assertions.assertEquals(expectedLeaderboard2, leaderboard2);
     }
 }

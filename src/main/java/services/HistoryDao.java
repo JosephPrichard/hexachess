@@ -30,57 +30,45 @@ public class HistoryDao {
                 blackId VARCHAR NOT NULL,
                 result INTEGER NOT NULL,
                 data BYTEA NOT NULL,
-                playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+                playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                winElo NUMERIC NOT NULL,
+                loseElo NUMERIC NOT NULL);
+                
             CREATE INDEX idxWhiteId ON histories(whiteId);
-            CREATE INDEX idxBlackId ON histories(blackId);
-            """;
+            CREATE INDEX idxBlackId ON histories(blackId);""";
         runner.execute(sql);
     }
 
-    public void insert(String whiteId, String blackId, int result, byte[] data) throws SQLException  {
-        var sql = "BEGIN; INSERT INTO histories (whiteId, blackId, result, data) VALUES (?, ?, ?, ?); END";
-        runner.execute(sql, whiteId, blackId, result, data);
+    public void insert(String whiteId, String blackId, int result, byte[] data, double winElo, double loseElo) throws SQLException  {
+        var sql = "BEGIN; INSERT INTO histories (whiteId, blackId, result, data, winElo, loseElo) VALUES (?, ?, ?, ?, ?, ?); END";
+        runner.execute(sql, whiteId, blackId, result, data, winElo, loseElo);
     }
 
     public HistoryEntity getHistory(long id) throws SQLException  {
         var sql = """
-            SELECT
-                h.id as id,
-                h.whiteId as whiteId,
-                h.blackId as blackId,
-                a1.username as whiteName,
-                a2.username as blackName,
-                h.result as result,
-                h.data as data,
-                h.playedOn as playedOn
+            SELECT h.id, h.whiteId, h.blackId,
+                u1.username as whiteName, u2.username as blackName,
+                h.result, h.data, h.playedOn, h.winElo, h.loseElo
             FROM histories as h
-            INNER JOIN accounts as a1
-            ON a1.id = h.whiteId
-            INNER JOIN accounts as a2
-            ON a2.id = h.blackId
-            WHERE h.id = ?
-            """;
+            INNER JOIN users as u1
+            ON u1.id = h.whiteId
+            INNER JOIN users as u2
+            ON u2.id = h.blackId
+            WHERE h.id = ?""";
         return runner.query(sql, historyMapper, id);
     }
 
     public List<HistoryEntity> getHistories(String whiteId, String blackId, String cursor) throws SQLException {
         var sql = new StringBuilder("""
-            SELECT
-                h.id as id,
-                h.whiteId as whiteId,
-                h.blackId as blackId,
-                a1.username as whiteName,
-                a2.username as blackName,
-                h.result as result,
-                h.data as data,
-                h.playedOn as playedOn
+            SELECT h.id, h.whiteId, h.blackId,
+                u1.username as whiteName, u2.username as blackName,
+                h.result, h.data, h.playedOn, h.winElo, h.loseElo
             FROM histories as h
-            INNER JOIN accounts as a1
-            ON a1.id = h.whiteId
-            INNER JOIN accounts as a2
-            ON a2.id = h.blackId
-            WHERE 1 = 1
-            """);
+            INNER JOIN users as u1
+            ON u1.id = h.whiteId
+            INNER JOIN users as u2
+            ON u2.id = h.blackId
+            WHERE 1 = 1""");
         List<Object> params = new ArrayList<>();
 
         if (whiteId != null) {
@@ -105,23 +93,16 @@ public class HistoryDao {
 
         // this query assumes that whiteId and blackId will be the same value, so we only need to join from whiteId
         var sql = new StringBuilder("""
-            SELECT
-                h.id as id,
-                h.whiteId as whiteId,
-                h.blackId as blackId,
-                a1.username as whiteName,
-                a2.username as blackName,
-                h.result as result,
-                h.data as data,
-                h.playedOn as playedOn
+            SELECT h.id, h.whiteId, h.blackId,
+                u1.username as whiteName, u2.username as blackName,
+                h.result, h.data, h.playedOn, h.winElo, h.loseElo
             FROM histories as h
-            INNER JOIN accounts as a1
-            ON a1.id = h.whiteId
-            INNER JOIN accounts as a2
-            ON a2.id = h.blackId
+            INNER JOIN users as u1
+            ON u1.id = h.whiteId
+            INNER JOIN users as u2
+            ON u2.id = h.blackId
             WHERE h.whiteId = ? OR h.blackId = ?
-            ORDER BY h.id DESC LIMIT 20
-            """);
+            ORDER BY h.id DESC LIMIT 20""");
         List<Object> params = new ArrayList<>();
 
         params.add(accountId);

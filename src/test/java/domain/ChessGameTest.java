@@ -13,7 +13,7 @@ import static domain.ChessBoard.*;
 import static domain.Hexagon.PieceMoves;
 import static utils.Log.LOGGER;
 
-public class TestChessGame {
+public class ChessGameTest {
 
     @Test
     public void testHexagonToString() {

@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestHistoryDao {
+public class HistoryDaoTest {
 
     public EmbeddedPostgres pg;
     private DataSource ds;
@@ -32,21 +32,22 @@ public class TestHistoryDao {
     public void beforeEach() throws SQLException {
         var runner = new QueryRunner(ds);
         runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+        userDao.createExtensions();
         userDao.createTable();
         historyDao.createTable();
     }
 
     public static void createTestData(UserDao userDao) {
         try {
-            userDao.insert(new UserDao.AccountInst("id1", "user1",
+            userDao.insert(new UserDao.UserInst("id1", "user1",
                 "password1", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.AccountInst("id2", "user2",
+            userDao.insert(new UserDao.UserInst("id2", "user2",
                 "password2", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.AccountInst("id3", "user3",
+            userDao.insert(new UserDao.UserInst("id3", "user3",
                 "password3", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.AccountInst("id4", "user4",
+            userDao.insert(new UserDao.UserInst("id4", "user4",
                 "password4", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.AccountInst("id5", "user5",
+            userDao.insert(new UserDao.UserInst("id5", "user5",
                 "password5", "us", 0f, 0, 0));
         } catch (NoSuchAlgorithmException | SQLException ex) {
             throw new RuntimeException(ex);
@@ -59,9 +60,9 @@ public class TestHistoryDao {
         createTestData(userDao);
 
         // when
-        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes());
-        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes());
-        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes());
+        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30);
+        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes(), 30, -30);
+        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes(), 30, -30);
 
         var actualHistory1 = historyDao.getHistory(1);
         var actualHistory2 = historyDao.getHistory(2);
@@ -69,11 +70,11 @@ public class TestHistoryDao {
 
         // then
         var expectedHistory1 = new HistoryEntity(1, "id1", "id2",
-            "user1", "user2", HistoryEntity.WHITE_WIN, "data1".getBytes(), null);
+            "user1", "user2", HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30, null);
         var expectedHistory2 = new HistoryEntity(2, "id2",
-            "id3", "user2", "user3", HistoryEntity.WHITE_LOSS, "data2".getBytes(), null);
+            "id3", "user2", "user3", HistoryEntity.WHITE_LOSS, "data2".getBytes(), 30, -30, null);
         var expectedHistory3 = new HistoryEntity(3, "id3",
-            "id1", "user3", "user1", HistoryEntity.BOTH_DRAW, "data3".getBytes(), null);
+            "id1", "user3", "user1", HistoryEntity.BOTH_DRAW, "data3".getBytes(), 30, -30, null);
 
         Assertions.assertEquals(expectedHistory1, actualHistory1);
         Assertions.assertEquals(expectedHistory2, actualHistory2);
@@ -85,9 +86,9 @@ public class TestHistoryDao {
         // given
         createTestData(userDao);
 
-        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes());
-        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes());
-        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes());
+        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30);
+        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes(), 30, -30);
+        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes(), 30, -30);
 
         // when
         var actualHistoryList = historyDao.getHistories("id1", null);
@@ -95,9 +96,9 @@ public class TestHistoryDao {
         // then
         var expectedHistoryList = List.of(
             new HistoryEntity(3, "id3", "id1", "user3", "user1",
-                HistoryEntity.BOTH_DRAW, "data3".getBytes(), null),
+                HistoryEntity.BOTH_DRAW, "data3".getBytes(), 30, -30, null),
             new HistoryEntity(1, "id1", "id2", "user1", "user2",
-                HistoryEntity.WHITE_WIN, "data1".getBytes(), null));
+                HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30, null));
 
         Assertions.assertEquals(expectedHistoryList, actualHistoryList);
     }
@@ -107,16 +108,17 @@ public class TestHistoryDao {
         // given
         createTestData(userDao);
 
-        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes());
-        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes());
-        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes());
+        historyDao.insert("id1", "id2", HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30);
+        historyDao.insert("id2", "id3", HistoryEntity.WHITE_LOSS, "data2".getBytes(), 30, -30);
+        historyDao.insert("id3", "id1", HistoryEntity.BOTH_DRAW, "data3".getBytes(), 30, -30);
 
         // when
         var actualHistoryList = historyDao.getHistories("id1", null, null);
 
         // then
         var expectedHistoryList = List.of(
-            new HistoryEntity(1, "id1", "id2", "user1", "user2", HistoryEntity.WHITE_WIN, "data1".getBytes(), null));
+            new HistoryEntity(1, "id1", "id2", "user1", "user2",
+                HistoryEntity.WHITE_WIN, "data1".getBytes(), 30, -30,  null));
 
         Assertions.assertEquals(expectedHistoryList, actualHistoryList);
     }

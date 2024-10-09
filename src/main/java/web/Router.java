@@ -46,6 +46,12 @@ public class Router extends Jooby {
     }
 
     public Router(State state) {
+        error((ctx, cause, statusCode) -> {
+            LOGGER.error("Encountered an `{}` error", statusCode.value(), cause);
+            ctx.setResponseCode(statusCode);
+            ctx.send("An unexpected error has occurred with code " + statusCode.value());
+        });
+
         mount(new FileRouter(state));
         mount(new PageRouter(state));
         mount(new FormRouter(state));

@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutionException;
 import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestGlobalBroadcaster {
+public class GlobalBroadcasterTest {
 
     private RedisServer redisServer;
     private JedisPooled jedis;

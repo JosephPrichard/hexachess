@@ -15,13 +15,15 @@ public class HistoryEntity {
     public static final int WHITE_LOSS = 1;
     public static final int BOTH_DRAW = 2;
 
-    private long id;
-    private String whiteId;
-    private String blackId;
-    private String whiteName;
-    private String blackName;
-    private int result;
-    private byte[] data;
+    long id;
+    String whiteId;
+    String blackId;
+    String whiteName;
+    String blackName;
+    int result;
+    byte[] data;
+    float winElo;
+    float loseElo;
     @EqualsAndHashCode.Exclude
-    private Timestamp playedOn;
+    Timestamp playedOn;
 }

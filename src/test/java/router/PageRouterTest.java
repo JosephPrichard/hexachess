@@ -14,14 +14,14 @@ import java.util.List;
 
 import static org.mockito.Mockito.*;
 
-public class TestPageRouter {
+public class PageRouterTest {
 
     @Test
     public void testGetStats() throws SQLException {
         // given
         var state = new State();
         var accountId = "1";
-        var stats = new StatsEntity("1", "testUser", "us", 1050, 5, 3);
+        var stats = new StatsEntity("1", "testUser", "us", 1050, 5, 3, 0);
 
         var mockAccountDao = mock(UserDao.class);
         when(mockAccountDao.getStats(accountId)).thenReturn(stats);
@@ -42,11 +42,11 @@ public class TestPageRouter {
         // given
         var state = new State();
         var leaderboard = List.of(
-            new StatsEntity("1", "testUser1", "us", 1000, 3, 3),
-            new StatsEntity("2", "testUser2", "us", 1500, 15, 3));
+            new StatsEntity("1", "testUser1", "us", 1000, 3, 3, 0),
+            new StatsEntity("2", "testUser2", "us", 1500, 15, 3, 0));
 
         var mockAccountDao = mock(UserDao.class);
-        when(mockAccountDao.getLeaderboard(null, 20)).thenReturn(leaderboard);  // No cursor
+        when(mockAccountDao.getLeaderboard(1, 20)).thenReturn(leaderboard);  // No cursor
         state.setUserDao(mockAccountDao);
 
         var mockRouter = new MockRouter(new PageRouter(state));
@@ -55,7 +55,7 @@ public class TestPageRouter {
         var result = mockRouter.get("/leaderboard");
 
         // then
-        verify(mockAccountDao, times(1)).getLeaderboard(null, 20);
+        verify(mockAccountDao, times(1)).getLeaderboard(1, 20);
         Assertions.assertEquals(leaderboard, result.value());
     }
 
@@ -71,7 +71,7 @@ public class TestPageRouter {
         var mockRouter = new MockRouter(new PageRouter(state));
 
         // when
-        var result = mockRouter.get("/player/1/history", new MockContext().setQueryString("cursor=2"));
+        var result = mockRouter.get("/players/1/history", new MockContext().setQueryString("cursor=2"));
 
         // then
         verify(mockHistoryDao, times(1)).getHistories("1", "2");
@@ -95,25 +95,6 @@ public class TestPageRouter {
         // then
         verify(mockHistoryDao, times(1)).getHistories("1", "2", "3");
         Assertions.assertEquals(List.of(), result.value());
-    }
-
-    @Test
-    public void testPostCreategame() {
-        // given
-        var state = new State();
-
-        var mockgameService = mock(GameService.class);
-        when(mockgameService.create(null)).thenReturn("test-id");
-        state.setGameService(mockgameService);
-
-        var mockRouter = new MockRouter(new PageRouter(state));
-
-        // when
-        var result = mockRouter.post("/forms/games/create");
-
-        // then
-        verify(mockgameService, times(1)).create(null);
-        Assertions.assertEquals("test-id", result.value());
     }
 
     @Test

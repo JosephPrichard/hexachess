@@ -15,19 +15,19 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GameState {
+    String id;
+    ChessGame game;
+    Player whitePlayer = null;
+    Player blackPlayer = null;
+    boolean isEnded;
 
-    private String id;
-    private ChessGame game;
-    private Player whitePlayer = null;
-    private Player blackPlayer = null;
-    private boolean isEnded;
     @JsonIgnore
-    private Boolean isFirstPlayerWhite = null; // true - first player joining should be white... false - first player joining should be black... null - random...
+    Boolean isFirstPlayerWhite = null; // true - first player joining should be white... false - first player joining should be black... null - random...
     @EqualsAndHashCode.Exclude
     @JsonIgnore
-    private double touch;
+    double touch;
     @JsonIgnore
-    private List<Hexagon.Move> moveHistory;
+    List<Hexagon.Move> moveHistory;
 
     public GameState deepCopy() {
         return new GameState(id,

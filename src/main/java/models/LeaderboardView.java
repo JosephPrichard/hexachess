@@ -10,5 +10,5 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class LeaderboardView {
-    private List<StatsView> statsList;
+    List<StatsView> statsList;
 }

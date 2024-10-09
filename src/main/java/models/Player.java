@@ -10,9 +10,9 @@ import org.apache.commons.lang3.builder.EqualsExclude;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Player {
-    private String id;
+    String id;
     @EqualsAndHashCode.Exclude
-    private String name;
+    String name;
 
     public Player deepCopy() {
         return new Player(id, name);

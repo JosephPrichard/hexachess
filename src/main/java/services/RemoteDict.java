@@ -15,6 +15,7 @@ import utils.Serializer;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class RemoteDict {
     private final ObjectReader playerReader;
 
     private static final String GAMES_ZSET = "games";
+    private static final String LEADERBOARD_ZSET = "leaderboard";
     private static final Duration GAME_EXPIRE_FINISHED = Duration.ofHours(1);
 
     public RemoteDict(JedisPooled jedis, ObjectMapper jsonMapper) {
@@ -55,10 +57,10 @@ public class RemoteDict {
         var bytes = Serializer.serialize(gameState);
         var fullId = "game:" + id;
 
-        var transaction = jedis.multi();
-        transaction.set(fullId.getBytes(), bytes);
-        transaction.zadd(GAMES_ZSET, timeNanos, fullId);
-        transaction.exec();
+        var t = jedis.multi();
+        t.set(fullId.getBytes(), bytes);
+        t.zadd(GAMES_ZSET, timeNanos, fullId);
+        t.exec();
 
         return gameState;
     }
@@ -74,10 +76,10 @@ public class RemoteDict {
         var gameKeys = results.toArray(String[]::new);
 
         if (gameKeys.length > 0) {
-            var transaction = jedis.multi();
-            transaction.del(gameKeys);
-            transaction.zrem(GAMES_ZSET, gameKeys);
-            transaction.exec();
+            var t = jedis.multi();
+            t.del(gameKeys);
+            t.zrem(GAMES_ZSET, gameKeys);
+            t.exec();
         }
     }
 
@@ -139,5 +141,47 @@ public class RemoteDict {
             player = new Player(UUID.randomUUID().toString(), guestName);
         }
         return player;
+    }
+
+    public int getLeaderboardRank(String id) {
+        return jedis.zrank(LEADERBOARD_ZSET, id).intValue() + 1;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class RankedUser {
+        String id;
+        float elo;
+        int rank;
+    }
+
+    public List<RankedUser> getLeaderboard(int startRank, int count) {
+        var results = jedis.zrangeWithScores(LEADERBOARD_ZSET, startRank - 1, startRank - 2 + count);
+
+        List<RankedUser> leaderboard = new ArrayList<>();
+        for (int i = 0; i < results.size(); i++) {
+            var tuple = results.get(i);
+            leaderboard.add(new RankedUser(tuple.getElement(), (float) tuple.getScore(), startRank + i));
+        }
+        return leaderboard;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class EloChangeSet {
+        String id;
+        double elo;
+    }
+
+    public void updateLeaderboardUser(EloChangeSet... changeSets) {
+        var t = jedis.multi();
+        for (var cs : changeSets) {
+            t.zincrby(LEADERBOARD_ZSET, cs.elo, cs.id);
+        }
+        t.exec();
+    }
+
+    public void updateLeaderboardUser(String id, double elo) {
+        jedis.zincrby(LEADERBOARD_ZSET, elo, id);
     }
 }

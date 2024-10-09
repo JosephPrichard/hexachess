@@ -3,12 +3,15 @@ package web;
 import io.jooby.Jooby;
 import io.jooby.MediaType;
 import io.jooby.StatusCode;
+import models.ErrorView;
 import models.LeaderboardView;
 import models.SearchView;
 import models.StatsView;
 import utils.ErrorResp;
 import utils.Threading;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 public class PageRouter extends Jooby {
@@ -29,7 +32,14 @@ public class PageRouter extends Jooby {
             return next.apply(ctx);
         });
 
-        get("*", ctx -> templates.getNotFoundTemplate().apply(null));
+        get("*", ctx -> {
+            var template = templates.getErrorTemplate();
+            var message = """
+                Sorry, the page you are looking for does not exist.
+                You might have followed a broken link or entered a URL that doesn't exist on this site.
+                """;
+            return template.apply(new ErrorView(404, message));
+        });
 
         get("/", ctx -> templates.getIndexTemplate().apply(null));
 
@@ -46,23 +56,35 @@ public class PageRouter extends Jooby {
         });
 
         get("/leaderboard", ctx -> {
-            var cursor = ctx.query("cursor").toOptional().map(Float::parseFloat).orElse(null);
-            var entityList = accountDao.getLeaderboard(cursor, 20);
+            try {
+                var page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
 
-            var template = templates.getLeaderboardTemplate();
-            var viewList = StatsView.fromSortedEntityList(entityList);
-            return template.apply(new LeaderboardView(viewList));
+                var entityList = accountDao.getLeaderboard(page, 20);
+                var template = templates.getLeaderboardTemplate();
+                var viewList = StatsView.fromEntityList(entityList);
+                return template.apply(new LeaderboardView(viewList));
+            } catch (NumberFormatException ex) {
+                var template = templates.getErrorTemplate();
+                return template.apply(new ErrorView(404, "Invalid param 'page' - must be a positive integer."));
+            }
         });
 
         get("/players/search", ctx -> {
-            var name = ctx.query("username").toOptional().orElse("");
-            var template = templates.getSearchTemplate();
-            if (!name.isEmpty()) {
-                var entityList = accountDao.searchPlayerStats(name);
-                var viewList = StatsView.fromEntityList(entityList);
-                return template.apply(new SearchView(name, viewList));
-            } else {
-                return template.apply(new SearchView(name, List.of()));
+            try {
+                int page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
+                var name = ctx.query("username").toOptional().orElse("");
+
+                var template = templates.getSearchTemplate();
+                if (!name.isEmpty()) {
+                    var entityList = accountDao.searchUsers(name, page, 20);
+                    var viewList = StatsView.fromEntityList(entityList);
+                    return template.apply(new SearchView(name, viewList));
+                } else {
+                    return template.apply(new SearchView(name, List.of()));
+                }
+            } catch (NumberFormatException ex) {
+                var template = templates.getErrorTemplate();
+                return template.apply(new ErrorView(404, "Invalid param 'page' - must be a positive integer."));
             }
         });
 

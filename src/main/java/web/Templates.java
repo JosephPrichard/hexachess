@@ -1,7 +1,6 @@
 package web;
 
 import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Helper;
 import com.github.jknack.handlebars.Options;
 import com.github.jknack.handlebars.Template;
 import lombok.Getter;
@@ -19,7 +18,7 @@ public class Templates {
     private final Template currentTemplate;
     private final Template historyTemplate;
     private final Template searchTemplate;
-    private final Template notFoundTemplate;
+    private final Template errorTemplate;
 
     public Templates(Handlebars handlebars) throws IOException {
         indexTemplate =  handlebars.compile("index");
@@ -30,7 +29,7 @@ public class Templates {
         currentTemplate = handlebars.compile("current-games");
         historyTemplate = handlebars.compile("history-games");
         searchTemplate = handlebars.compile("search-players");
-        notFoundTemplate = handlebars.compile("404");
+        errorTemplate = handlebars.compile("error");
 
         registerHelpers(handlebars);
     }

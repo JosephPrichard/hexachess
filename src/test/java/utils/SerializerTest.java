@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public class TestSerializer {
+public class SerializerTest {
 
     @Test
     public void testRoundTrip() {

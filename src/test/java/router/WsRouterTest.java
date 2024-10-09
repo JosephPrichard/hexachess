@@ -25,7 +25,7 @@ import static utils.Log.LOGGER;
 
 // integration style test that mocks out external data stores but checks if a game can be played through websockets
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestWsRouter {
+public class WsRouterTest {
 
     private RedisServer redisServer;
     private JedisPooled jedis;

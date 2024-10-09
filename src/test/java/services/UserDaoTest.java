@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestUserDao {
+public class UserDaoTest {
 
     public EmbeddedPostgres pg;
     private DataSource ds;
@@ -30,6 +30,7 @@ public class TestUserDao {
     public void beforeEach() throws SQLException {
         var runner = new QueryRunner(ds);
         runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+        userDao.createExtensions();
         userDao.createTable();
     }
 
@@ -40,11 +41,11 @@ public class TestUserDao {
 
     public static void createTestData(UserDao userDao) {
         try {
-            userDao.insert(new UserDao.AccountInst("id1", "user1", "password1", "us", 1000f, 0, 0));
-            userDao.insert(new UserDao.AccountInst("id2", "user2", "password2", "us", 1005f, 1, 0));
-            userDao.insert(new UserDao.AccountInst("id3", "user3", "password3", "us", 900f, 1, 8));
-            userDao.insert(new UserDao.AccountInst("id4", "user4", "password4", "us", 2000f, 50, 20));
-            userDao.insert(new UserDao.AccountInst("id5", "user5", "password5", "us", 1500f, 40, 35));
+            userDao.insert(new UserDao.UserInst("id1", "user1", "password1", "us", 1000f, 0, 0));
+            userDao.insert(new UserDao.UserInst("id2", "user2", "password2", "us", 1005f, 1, 0));
+            userDao.insert(new UserDao.UserInst("id3", "user3", "password3", "us", 900f, 1, 8));
+            userDao.insert(new UserDao.UserInst("id4", "user4", "password4", "us", 2000f, 50, 20));
+            userDao.insert(new UserDao.UserInst("id5", "user5", "password5", "us", 1500f, 40, 35));
         } catch (NoSuchAlgorithmException | SQLException ex) {
             throw new RuntimeException(ex);
         }
@@ -94,23 +95,25 @@ public class TestUserDao {
     }
 
     @Test
-    public void testUpdateStats() throws SQLException {
+    public void testUpdateStatsUsingResult() throws SQLException {
         // given
         createTestData(userDao);
-        userDao.defProcUpdateStats();
+        userDao.defineProcedures();
 
         // when
-        userDao.updateStats("id1", "id2");
+        var changeSet = userDao.updateStatsUsingResult("id1", "id2");
         var actualStats1 = userDao.getStats("id1");
         var actualStats2 = userDao.getStats("id2");
 
-        actualStats1.setElo(Math.round(actualStats1.getElo()));
-        actualStats2.setElo(Math.round(actualStats2.getElo()));
+        changeSet.roundElo();
+        actualStats1.roundElo();
+        actualStats2.roundElo();
 
         // then
         var expectedStats1 = new StatsEntity("id1", "user1", "us", 1015f, 1, 0);
         var expectedStats2 = new StatsEntity("id2", "user2", "us", 990f, 1, 1);
 
+        Assertions.assertEquals(changeSet, new UserDao.EloChangeSet(15f, -15f));
         Assertions.assertEquals(expectedStats1, actualStats1);
         Assertions.assertEquals(expectedStats2, actualStats2);
     }
@@ -141,7 +144,7 @@ public class TestUserDao {
         createTestData(userDao);
 
         // when
-        var actualStatsList1 = userDao.getLeaderboard(null, 5);
+        var actualStatsList1 = userDao.getLeaderboard(1, 5);
 
         // then
         var expectedStatsList1 = List.of(
@@ -151,31 +154,22 @@ public class TestUserDao {
             new StatsEntity("id1", "user1", "us", 1000f, 0, 0),
             new StatsEntity("id3", "user3", "us", 900f, 1, 8));
         Assertions.assertEquals(expectedStatsList1, actualStatsList1);
-
-        // when
-        var actualStatsList2 = userDao.getLeaderboard(1005f, 5);
-
-        // then
-        var expectedStatsList2 = List.of(
-            new StatsEntity("id1", "user1", "us", 1000f, 0, 0),
-            new StatsEntity("id3", "user3", "us", 900f, 1, 8));
-        Assertions.assertEquals(expectedStatsList2, actualStatsList2);
     }
 
     @Test
-    public void testSearchPlayerStats() throws SQLException, NoSuchAlgorithmException {
+    public void testSearchUsers() throws SQLException, NoSuchAlgorithmException {
         // given
         createTestData(userDao);
-        userDao.insert(new UserDao.AccountInst("id6", "johnny", "password6", "us", 0f, 0, 0));
-        userDao.insert(new UserDao.AccountInst("id7", "john", "password7", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id6", "johnny", "password6", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id7", "john", "password7", "us", 0f, 0, 0));
 
         // when
-        var actualStatsList1 = userDao.searchPlayerStats("john");
+        var actualStatsList1 = userDao.searchUsers("john", 1, 20);
 
         // then
         var expectedStatsList1 = List.of(
-            new StatsEntity("id7", "john", "us", 0f, 0, 0),
-            new StatsEntity("id6", "johnny", "us", 0f, 0, 0));
+            new StatsEntity("id6", "johnny", "us", 0f, 0, 0, 1),
+            new StatsEntity("id7", "john", "us", 0f, 0, 0, 2));
         Assertions.assertEquals(expectedStatsList1, actualStatsList1);
     }
 }
