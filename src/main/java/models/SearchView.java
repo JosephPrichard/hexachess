@@ -9,5 +9,6 @@ import java.util.List;
 @AllArgsConstructor
 public class SearchView {
     String searchText;
-    List<StatsView> statsList;
+    List<UserEntity> userList;
+    PaginationView pages;
 }

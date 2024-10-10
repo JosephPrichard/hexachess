@@ -5,6 +5,7 @@ import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.jooby.Jooby;
+import models.ErrorView;
 import redis.clients.jedis.JedisPooled;
 import utils.Config;
 
@@ -26,15 +27,14 @@ public class Router extends Jooby {
 
             var redisHost = envMap.get("REDIS_HOST");
             var redisPort = Integer.parseInt(envMap.get("REDIS_PORT"));
+            var jedis = new JedisPooled(redisHost, redisPort);
 
             var loader = new ClassPathTemplateLoader();
             loader.setPrefix("/templates");
             loader.setSuffix(".hbs");
+            var handlebars = new Handlebars(loader);
 
             var files = Config.createFilesMap();
-
-            var handlebars = new Handlebars(loader);
-            var jedis = new JedisPooled(redisHost, redisPort);
 
             var state = new State(jedis, ds, handlebars, files);
 //            var state = new State(null, null, null);
@@ -47,9 +47,13 @@ public class Router extends Jooby {
 
     public Router(State state) {
         error((ctx, cause, statusCode) -> {
-            LOGGER.error("Encountered an `{}` error", statusCode.value(), cause);
-            ctx.setResponseCode(statusCode);
-            ctx.send("An unexpected error has occurred with code " + statusCode.value());
+            var template = state.getTemplates().getErrorTemplate();
+            try {
+                LOGGER.error(cause.toString());
+                ctx.send(template.apply(new ErrorView(statusCode.value(), "Unexpected error has occurred. Contact website administrator.")));
+            } catch (Exception e) {
+                ctx.send("Unexpected error occurred while handling another error! Contact website administrator.");
+            }
         });
 
         mount(new FileRouter(state));

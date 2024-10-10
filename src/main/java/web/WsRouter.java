@@ -91,7 +91,7 @@ public class WsRouter extends Jooby {
         var socketExchange = state.getBroadcaster();
         var jsonMapper = state.getJsonMapper();
 
-        return ws -> Threading.VIRTUAL_EXECUTOR.execute(() -> {
+        return ws -> Threading.EXECUTOR.execute(() -> {
             try {
                 var game = gameService.join(gameId, player);
                 if (game == null) {
@@ -119,7 +119,7 @@ public class WsRouter extends Jooby {
         var broadcastService = state.getBroadcaster();
         var jsonMapper = state.getJsonMapper();
 
-        return (ws, message) -> Threading.VIRTUAL_EXECUTOR.execute(() -> {
+        return (ws, message) -> Threading.EXECUTOR.execute(() -> {
             try {
                 try {
                     LOGGER.info(String.format("Received message from player %s, %s on game %s", player.getId(), message.value(), gameId));

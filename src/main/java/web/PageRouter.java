@@ -2,28 +2,22 @@ package web;
 
 import io.jooby.Jooby;
 import io.jooby.MediaType;
-import io.jooby.StatusCode;
-import models.ErrorView;
-import models.LeaderboardView;
-import models.SearchView;
-import models.StatsView;
-import utils.ErrorResp;
+import models.*;
 import utils.Threading;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class PageRouter extends Jooby {
 
     public PageRouter(State state) {
-        var jsonMapper = state.getJsonMapper();
-        var accountDao = state.getUserDao();
+        var userDao = state.getUserDao();
         var historyDao = state.getHistoryDao();
         var gameService = state.getGameService();
+        var remoteDict = state.getRemoteDict();
         var templates = state.getTemplates();
 
-        setWorker(Threading.VIRTUAL_EXECUTOR);
+        setWorker(Threading.EXECUTOR);
 
         assets("/css/index.css", "/css/index.css");
 
@@ -45,27 +39,26 @@ public class PageRouter extends Jooby {
 
         get("/index", ctx -> templates.getIndexTemplate().apply(null));
 
-        get("/players/{id}/stats", ctx -> {
-            var accountIdSlug = ctx.path("id");
-            if (accountIdSlug.isMissing()) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);
-            }
-            var accountId = accountIdSlug.toString();
-
-            return accountDao.getStats(accountId);
-        });
-
         get("/leaderboard", ctx -> {
             try {
-                var page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
+                int page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
 
-                var entityList = accountDao.getLeaderboard(page, 20);
+                var entityList = CompletableFuture.supplyAsync(() -> userDao.getLeaderboard(page, 25), Threading.EXECUTOR);
+                var totalPages = CompletableFuture.supplyAsync(() -> userDao.countPages(25), Threading.EXECUTOR);
+
+//                var leaderboard = remoteDict.getLeaderboardPage(page, 20);
+//                var entityList = userDao.getByRanks(leaderboard.getUsers());
+//                RankedUser.joinRanks(leaderboard.getUsers(), entityList);
+
                 var template = templates.getLeaderboardTemplate();
-                var viewList = StatsView.fromEntityList(entityList);
-                return template.apply(new LeaderboardView(viewList));
+
+                return template.apply(new LeaderboardView(entityList.get(),
+                    PaginationView.withTotal("?", page, totalPages.get())));
+//                return template.apply(new LeaderboardView(entityList,
+//                    PaginationView.withTotal("?", page, leaderboard.getPageCount())));
             } catch (NumberFormatException ex) {
                 var template = templates.getErrorTemplate();
-                return template.apply(new ErrorView(404, "Invalid param 'page' - must be a positive integer."));
+                return template.apply(new ErrorView(404, "Invalid param 'page': must be a positive integer."));
             }
         });
 
@@ -75,30 +68,36 @@ public class PageRouter extends Jooby {
                 var name = ctx.query("username").toOptional().orElse("");
 
                 var template = templates.getSearchTemplate();
-                if (!name.isEmpty()) {
-                    var entityList = accountDao.searchUsers(name, page, 20);
-                    var viewList = StatsView.fromEntityList(entityList);
-                    return template.apply(new SearchView(name, viewList));
-                } else {
-                    return template.apply(new SearchView(name, List.of()));
+                if (name.isEmpty()) {
+                    return template.apply(new SearchView(name, List.of(), PaginationView.ofUnlimited("?", page)));
                 }
+
+                var entityList = userDao.searchByName(name, page, 20);
+
+                return template.apply(new SearchView(name, entityList,
+                    PaginationView.ofUnlimited(String.format("?username=%s&", name), page)));
             } catch (NumberFormatException ex) {
                 var template = templates.getErrorTemplate();
-                return template.apply(new ErrorView(404, "Invalid param 'page' - must be a positive integer."));
+                return template.apply(new ErrorView(404, "Invalid param 'page': must be a positive integer."));
             }
         });
 
-        get("/players/{id}/history", ctx -> {
-            var accountIdSlug = ctx.path("id");
-            if (accountIdSlug.isMissing()) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);
+        get("/players/{id}", ctx -> {
+            var userIdSlug = ctx.path("id");
+            if (userIdSlug.isMissing()) {
+                var template = templates.getErrorTemplate();
+                return template.apply(new ErrorView(404, "Invalid param 'id': must contain id within slug."));
             }
-            var accountId = accountIdSlug.toString();
+            var userId = userIdSlug.toString();
 
-            var cursorParam = ctx.query("cursor");
-            var cursor = cursorParam.toOptional().orElse(null);
+            var entity = userDao.getByIdWithRank(userId);
 
-            return historyDao.getHistories(accountId, cursor);
+//            var entity = userDao.getById(userId);
+//            var rank = remoteDict.getLeaderboardRank(entity.getId());
+//            entity.setRank(rank);
+
+            var template = templates.getProfileTemplate();
+            return template.apply(entity);
         });
 
         get("/games/history", ctx -> {

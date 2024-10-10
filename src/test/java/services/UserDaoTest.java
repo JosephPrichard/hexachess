@@ -1,7 +1,7 @@
 package services;
 
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
-import models.StatsEntity;
+import models.UserEntity;
 import org.apache.commons.dbutils.QueryRunner;
 import org.junit.jupiter.api.*;
 
@@ -28,8 +28,7 @@ public class UserDaoTest {
 
     @BeforeEach
     public void beforeEach() throws SQLException {
-        var runner = new QueryRunner(ds);
-        runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+        new QueryRunner(ds).execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
         userDao.createExtensions();
         userDao.createTable();
     }
@@ -40,20 +39,16 @@ public class UserDaoTest {
     }
 
     public static void createTestData(UserDao userDao) {
-        try {
-            userDao.insert(new UserDao.UserInst("id1", "user1", "password1", "us", 1000f, 0, 0));
-            userDao.insert(new UserDao.UserInst("id2", "user2", "password2", "us", 1005f, 1, 0));
-            userDao.insert(new UserDao.UserInst("id3", "user3", "password3", "us", 900f, 1, 8));
-            userDao.insert(new UserDao.UserInst("id4", "user4", "password4", "us", 2000f, 50, 20));
-            userDao.insert(new UserDao.UserInst("id5", "user5", "password5", "us", 1500f, 40, 35));
-        } catch (NoSuchAlgorithmException | SQLException ex) {
-            throw new RuntimeException(ex);
-        }
+        userDao.insert(new UserDao.UserInst("id1", "user1", "password1", "us", 1000f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id2", "user2", "password2", "us", 1005f, 1, 0));
+        userDao.insert(new UserDao.UserInst("id3", "user3", "password3", "us", 900f, 1, 8));
+        userDao.insert(new UserDao.UserInst("id4", "user4", "password4", "us", 2000f, 50, 20));
+        userDao.insert(new UserDao.UserInst("id5", "user5", "password5", "us", 1500f, 40, 35));
     }
 
 
     @Test
-    public void testInsertThenVerify() throws SQLException, NoSuchAlgorithmException {
+    public void testInsertThenVerify() {
          // when
         var inst1 = userDao.insert("user1", "password1");
         var inst2 = userDao.insert("user2", "password2");
@@ -74,7 +69,7 @@ public class UserDaoTest {
     }
 
     @Test
-    public void testUpdateAccounts() throws SQLException, NoSuchAlgorithmException {
+    public void testUpdateAccounts() {
         // when
         var inst1 = userDao.insert("user1", "password1");
         var inst2 = userDao.insert("user2", "password2");
@@ -95,31 +90,31 @@ public class UserDaoTest {
     }
 
     @Test
-    public void testUpdateStatsUsingResult() throws SQLException {
+    public void testUpdateStatsUsingResult() {
         // given
         createTestData(userDao);
         userDao.defineProcedures();
 
         // when
         var changeSet = userDao.updateStatsUsingResult("id1", "id2");
-        var actualStats1 = userDao.getStats("id1");
-        var actualStats2 = userDao.getStats("id2");
+        var actualUsers1 = userDao.getById("id1");
+        var actualUsers2 = userDao.getById("id2");
 
         changeSet.roundElo();
-        actualStats1.roundElo();
-        actualStats2.roundElo();
+        actualUsers1.roundElo();
+        actualUsers2.roundElo();
 
         // then
-        var expectedStats1 = new StatsEntity("id1", "user1", "us", 1015f, 1, 0);
-        var expectedStats2 = new StatsEntity("id2", "user2", "us", 990f, 1, 1);
+        var expectedUsers1 = new UserEntity("id1", "user1", "us", 1015f, 1015f, 1, 0, 0, null);
+        var expectedUsers2 = new UserEntity("id2", "user2", "us", 990f, 1005f, 1, 1, 0, null);
 
-        Assertions.assertEquals(changeSet, new UserDao.EloChangeSet(15f, -15f));
-        Assertions.assertEquals(expectedStats1, actualStats1);
-        Assertions.assertEquals(expectedStats2, actualStats2);
+        Assertions.assertEquals(changeSet, new UserDao.EloChangeSet(1015f, 990f));
+        Assertions.assertEquals(expectedUsers1, actualUsers1);
+        Assertions.assertEquals(expectedUsers2, actualUsers2);
     }
 
     @Test
-    public void testUpdateAccount() throws SQLException {
+    public void testUpdateAccount() {
         // given
         createTestData(userDao);
 
@@ -127,49 +122,89 @@ public class UserDaoTest {
         userDao.updateAccount("id1", "user1-changed", "us");
         userDao.updateAccount("id2", "user2-changed", "eu");
 
-        var actualStats1 = userDao.getStats("id1");
-        var actualStats2 = userDao.getStats("id2");
+        var actualUsers1 = userDao.getById("id1");
+        var actualUsers2 = userDao.getById("id2");
 
         // then
-        var expectedStats1 = new StatsEntity("id1", "user1-changed", "us", 1000f, 0, 0);
-        var expectedStats2 = new StatsEntity("id2", "user2-changed", "eu", 1005f, 1, 0);
+        var expectedUsers1 = new UserEntity("id1", "user1-changed", "us", 1000f, 0, 0);
+        var expectedUsers2 = new UserEntity("id2", "user2-changed", "eu", 1005f, 1, 0);
 
-        Assertions.assertEquals(expectedStats1, actualStats1);
-        Assertions.assertEquals(expectedStats2, actualStats2);
+        Assertions.assertEquals(expectedUsers1, actualUsers1);
+        Assertions.assertEquals(expectedUsers2, actualUsers2);
     }
 
     @Test
-    public void testGetLeaderboard() throws SQLException {
+    public void testGetLeaderboard() {
         // given
         createTestData(userDao);
 
         // when
-        var actualStatsList1 = userDao.getLeaderboard(1, 5);
+        var actualUserList = userDao.getLeaderboard(1, 5);
 
         // then
-        var expectedStatsList1 = List.of(
-            new StatsEntity("id4", "user4", "us", 2000f, 50, 20),
-            new StatsEntity("id5", "user5", "us", 1500f, 40, 35),
-            new StatsEntity("id2", "user2", "us", 1005f, 1, 0),
-            new StatsEntity("id1", "user1", "us", 1000f, 0, 0),
-            new StatsEntity("id3", "user3", "us", 900f, 1, 8));
-        Assertions.assertEquals(expectedStatsList1, actualStatsList1);
+        var expectedUserList = List.of(
+            new UserEntity("id4", "user4", "us", 2000f, 0f, 50, 20, 1, null),
+            new UserEntity("id5", "user5", "us", 1500f, 0f, 40, 35, 2, null),
+            new UserEntity("id2", "user2", "us", 1005f, 0f, 1, 0, 3, null),
+            new UserEntity("id1", "user1", "us", 1000f, 0f, 0, 0, 4, null),
+            new UserEntity("id3", "user3", "us", 900f, 0f, 1, 8, 5, null));
+        Assertions.assertEquals(expectedUserList, actualUserList);
     }
 
     @Test
-    public void testSearchUsers() throws SQLException, NoSuchAlgorithmException {
+    public void testGetByIds() {
+        // given
+        createTestData(userDao);
+
+        // when
+        var actualUserList = userDao.getByIds(List.of("id1", "id2"));
+
+        // then
+        var expectedUserList = List.of(
+            new UserEntity("id1", "user1", "us", 1000f, 0f, 0, 0, 0, null),
+            new UserEntity("id2", "user2", "us", 1005f, 0f, 1, 0, 0, null));
+        Assertions.assertEquals(expectedUserList, actualUserList);
+    }
+
+    @Test
+    public void testByIdWithRank() {
+        // given
+        createTestData(userDao);
+
+        // when
+        var actualUser = userDao.getByIdWithRank("id1");
+
+        // then
+        var expectedUser = new UserEntity("id1", "user1", "us", 1000f, 1000f, 0, 0, 4, null);
+        Assertions.assertEquals(expectedUser, actualUser);
+    }
+
+    @Test
+    public void searchByName() {
         // given
         createTestData(userDao);
         userDao.insert(new UserDao.UserInst("id6", "johnny", "password6", "us", 0f, 0, 0));
         userDao.insert(new UserDao.UserInst("id7", "john", "password7", "us", 0f, 0, 0));
 
         // when
-        var actualStatsList1 = userDao.searchUsers("john", 1, 20);
+        var actualUserList = userDao.searchByName("john", 1, 20);
 
         // then
-        var expectedStatsList1 = List.of(
-            new StatsEntity("id6", "johnny", "us", 0f, 0, 0, 1),
-            new StatsEntity("id7", "john", "us", 0f, 0, 0, 2));
-        Assertions.assertEquals(expectedStatsList1, actualStatsList1);
+        var expectedUserList = List.of(
+            new UserEntity("id6", "johnny", "us", 0f, 0f, 0, 0, 1, null),
+            new UserEntity("id7", "john", "us", 0f, 0f, 0, 0, 2, null));
+        Assertions.assertEquals(expectedUserList, actualUserList);
+    }
+
+    @Test
+    public void testCountUsers() {
+        // given
+        createTestData(userDao);
+
+        // when
+        var count = userDao.countUsers();
+
+        // then
+        Assertions.assertEquals(5, count);
     }
 }

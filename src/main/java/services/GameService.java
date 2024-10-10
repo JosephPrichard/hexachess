@@ -104,7 +104,7 @@ public class GameService {
         if (game.isCheckmate()) {
             state.setEnded(true);
             var isWhiteWin = !game.getBoard().turn().isWhite(); // white wins if its checkmate when it's NOT their turn
-            Threading.VIRTUAL_EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
+            Threading.EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
         }
 
         LOGGER.info(String.format("%s made move %s on game %s", player, move, gameId));

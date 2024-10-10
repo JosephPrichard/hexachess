@@ -1,0 +1,17 @@
+<div class="pagination">
+    {{#if leftPage}}
+        <a class="page-button" href="{{baseUrl}}page={{leftPage}}">
+            &#11164;
+        </a>
+    {{/if}}
+    {{#each pages as |page|}}
+        <a class="page-button" href="{{baseUrl}}page={{page}}">
+            {{page}}
+        </a>
+    {{/each}}
+    {{#if rightPage}}
+        <a class="page-button" href="{{baseUrl}}page={{rightPage}}">
+            &#11166;
+        </a>
+    {{/if}}
+</div>

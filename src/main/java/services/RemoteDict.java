@@ -1,14 +1,12 @@
 package services;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import models.GameState;
 import models.Player;
+import models.RankedUser;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.resps.Tuple;
 import utils.Serializer;
@@ -149,21 +147,33 @@ public class RemoteDict {
 
     @Data
     @AllArgsConstructor
-    public static class RankedUser {
-        String id;
-        float elo;
-        int rank;
+    public static class Leaderboard {
+        List<RankedUser> users;
+        int pageCount;
     }
 
-    public List<RankedUser> getLeaderboard(int startRank, int count) {
-        var results = jedis.zrangeWithScores(LEADERBOARD_ZSET, startRank - 1, startRank - 2 + count);
+    public Leaderboard getLeaderboard(int startRank, int count) {
+        var p = jedis.pipelined();
+        var idsResp = p.zrange(LEADERBOARD_ZSET, startRank, startRank - 1 + count);
+        var elemCountResp = p.zcount(LEADERBOARD_ZSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        p.sync();
 
-        List<RankedUser> leaderboard = new ArrayList<>();
-        for (int i = 0; i < results.size(); i++) {
-            var tuple = results.get(i);
-            leaderboard.add(new RankedUser(tuple.getElement(), (float) tuple.getScore(), startRank + i));
+        var ids = idsResp.get();
+        var totalCount = elemCountResp.get().intValue();
+        var pageCount = totalCount / count;
+
+        List<RankedUser> users = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            var id = ids.get(i);
+            users.add(new RankedUser(id, startRank + i + 1));
         }
-        return leaderboard;
+        return new Leaderboard(users, pageCount);
+    }
+
+    public Leaderboard getLeaderboardPage(int page, int perPage) {
+        page = Math.max(page, 1);
+        var offset = (page - 1) * perPage;
+        return getLeaderboard(offset, perPage);
     }
 
     @Data
@@ -173,7 +183,7 @@ public class RemoteDict {
         double elo;
     }
 
-    public void updateLeaderboardUser(EloChangeSet... changeSets) {
+    public void incrLeaderboardUser(EloChangeSet... changeSets) {
         var t = jedis.multi();
         for (var cs : changeSets) {
             t.zincrby(LEADERBOARD_ZSET, cs.elo, cs.id);
@@ -181,7 +191,15 @@ public class RemoteDict {
         t.exec();
     }
 
-    public void updateLeaderboardUser(String id, double elo) {
+    public void incrLeaderboardUser(String id, double elo) {
         jedis.zincrby(LEADERBOARD_ZSET, elo, id);
+    }
+
+    public void updateLeaderboardUser(EloChangeSet... changeSets) {
+        var t = jedis.multi();
+        for (var cs : changeSets) {
+            t.zadd(LEADERBOARD_ZSET, cs.elo, cs.id);
+        }
+        t.exec();
     }
 }

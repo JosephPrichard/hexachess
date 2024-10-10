@@ -1,13 +1,15 @@
 package router;
 
+import com.github.jknack.handlebars.Template;
 import io.jooby.test.MockContext;
 import io.jooby.test.MockRouter;
-import models.StatsEntity;
+import models.UserEntity;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import services.*;
 import web.PageRouter;
 import web.State;
+import web.Templates;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -17,69 +19,58 @@ import static org.mockito.Mockito.*;
 public class PageRouterTest {
 
     @Test
-    public void testGetStats() throws SQLException {
+    public void testGetStats() {
         // given
         var state = new State();
         var accountId = "1";
-        var stats = new StatsEntity("1", "testUser", "us", 1050, 5, 3, 0);
+        var user = new UserEntity("1", "testUser", "us", 1050, 5, 3, 0);
 
         var mockAccountDao = mock(UserDao.class);
-        when(mockAccountDao.getStats(accountId)).thenReturn(stats);
+        when(mockAccountDao.getById(accountId)).thenReturn(user);
         state.setUserDao(mockAccountDao);
+
+        var mockTemplate = mock(Template.class);
+        var templates = new Templates();
+        templates.setProfileTemplate(mockTemplate);
+        state.setTemplates(templates);
 
         var mockRouter = new MockRouter(new PageRouter(state));
 
         // when
-        var result = mockRouter.get("/players/" + accountId + "/stats");
+        mockRouter.get("/players/" + accountId);
 
         // then
-        verify(mockAccountDao, times(1)).getStats(accountId);
-        Assertions.assertEquals(stats, result.value());
+        verify(mockAccountDao, times(1)).getById(accountId);
     }
 
     @Test
-    public void testGetLeaderboard() throws SQLException {
+    public void testGetLeaderboard() {
         // given
         var state = new State();
         var leaderboard = List.of(
-            new StatsEntity("1", "testUser1", "us", 1000, 3, 3, 0),
-            new StatsEntity("2", "testUser2", "us", 1500, 15, 3, 0));
+            new UserEntity("1", "testUser1", "us", 1000, 3, 3, 0),
+            new UserEntity("2", "testUser2", "us", 1500, 15, 3, 0));
 
         var mockAccountDao = mock(UserDao.class);
-        when(mockAccountDao.getLeaderboard(1, 20)).thenReturn(leaderboard);  // No cursor
+        when(mockAccountDao.getLeaderboard(1, 25)).thenReturn(leaderboard);
         state.setUserDao(mockAccountDao);
 
-        var mockRouter = new MockRouter(new PageRouter(state));
-
-        // when
-        var result = mockRouter.get("/leaderboard");
-
-        // then
-        verify(mockAccountDao, times(1)).getLeaderboard(1, 20);
-        Assertions.assertEquals(leaderboard, result.value());
-    }
-
-    @Test
-    public void testGetPlayerHistory() throws SQLException {
-        // given
-        var state = new State();
-
-        var mockHistoryDao = mock(HistoryDao.class);
-        when(mockHistoryDao.getHistories("1", "2")).thenReturn(List.of());
-        state.setHistoryDao(mockHistoryDao);
+        var mockTemplate = mock(Template.class);
+        var templates = new Templates();
+        templates.setLeaderboardTemplate(mockTemplate);
+        state.setTemplates(templates);
 
         var mockRouter = new MockRouter(new PageRouter(state));
 
         // when
-        var result = mockRouter.get("/players/1/history", new MockContext().setQueryString("cursor=2"));
+        mockRouter.get("/leaderboard");
 
         // then
-        verify(mockHistoryDao, times(1)).getHistories("1", "2");
-        Assertions.assertEquals(List.of(), result.value());
+        verify(mockAccountDao, times(1)).getLeaderboard(1, 25);
     }
 
     @Test
-    public void testGetHistory() throws SQLException {
+    public void testGetHistory() {
         // given
         var state = new State();
 

@@ -18,9 +18,12 @@
                 <input class="button-grey button-submit" type="submit" value="Submit">
             </form>
             {{#if searchText}}
-            {{> stats-table }}
+                {{> stats-table }}
             {{/if}}
         </div>
     </div>
+    {{#if searchText}}
+        {{> pagination pages }}
+    {{/if}}
 </body>
 </html>

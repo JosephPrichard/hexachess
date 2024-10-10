@@ -30,32 +30,27 @@ public class HistoryDaoTest {
 
     @BeforeEach
     public void beforeEach() throws SQLException {
-        var runner = new QueryRunner(ds);
-        runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+        new QueryRunner(ds).execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
         userDao.createExtensions();
         userDao.createTable();
         historyDao.createTable();
     }
 
     public static void createTestData(UserDao userDao) {
-        try {
-            userDao.insert(new UserDao.UserInst("id1", "user1",
-                "password1", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.UserInst("id2", "user2",
-                "password2", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.UserInst("id3", "user3",
-                "password3", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.UserInst("id4", "user4",
-                "password4", "us", 0f, 0, 0));
-            userDao.insert(new UserDao.UserInst("id5", "user5",
-                "password5", "us", 0f, 0, 0));
-        } catch (NoSuchAlgorithmException | SQLException ex) {
-            throw new RuntimeException(ex);
-        }
+        userDao.insert(new UserDao.UserInst("id1", "user1",
+            "password1", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id2", "user2",
+            "password2", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id3", "user3",
+            "password3", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id4", "user4",
+            "password4", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id5", "user5",
+            "password5", "us", 0f, 0, 0));
     }
 
     @Test
-    public void testInsertThenGet() throws SQLException {
+    public void testInsertThenGet() {
         // given
         createTestData(userDao);
 
@@ -82,7 +77,7 @@ public class HistoryDaoTest {
     }
 
     @Test
-    public void testGetHistoriesOneAccount() throws SQLException {
+    public void testGetHistoriesOneAccount() {
         // given
         createTestData(userDao);
 
@@ -104,7 +99,7 @@ public class HistoryDaoTest {
     }
 
     @Test
-    public void testGetHistories() throws SQLException {
+    public void testGetHistories() {
         // given
         createTestData(userDao);
 

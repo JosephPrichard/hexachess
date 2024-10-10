@@ -259,7 +259,7 @@ public class ChessBoard {
 
     public String toPieceMovesString(List<PieceMoves> moves) {
         var isAttacked = new boolean[FILES][];
-        for (var i = 0; i < isAttacked.length; i++) {
+        for (int i = 0; i < isAttacked.length; i++) {
             isAttacked[i] = new boolean[RANKS_PER_FILE[i]]; // defaulted to false
         }
 

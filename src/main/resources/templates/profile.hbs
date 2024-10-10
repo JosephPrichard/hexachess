@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Profile - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    {{> banner }}
+    <div class="center-horizontal-container">
+        <div class="panel">
+            <div class="text-lg capped-size">
+                {{username}}
+            </div>
+            <img class="flag-lg" src="/files/flags/{{country}}.png" alt=""/>
+            <br>
+            <div class="panel-container" style="min-width: 450px;">
+                <div class="panel-elem">
+                    <div class="panel-title">Rank</div>
+                    <div class="panel-text">#{{rank}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Elo</div>
+                    <div class="panel-text">{{roundedElo}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Peak Elo</div>
+                    <div class="panel-text">{{roundedHighestElo}}</div>
+                </div>
+            </div>
+            <div class="panel-container">
+                <div class="panel-elem">
+                    <div class="panel-title">Win%</div>
+                    <div class="panel-text {{winRateColor}}">{{winRate}}%</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Wins</div>
+                    <div class="panel-text green-color">{{wins}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Losses</div>
+                    <div class="panel-text red-color">{{losses}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Total</div>
+                    <div class="panel-text">{{total}}</div>
+                </div>
+            </div>
+            <div class="panel-elem">
+                <div class="panel-title">Joined On</div>
+                <div class="panel-text">{{formattedJoinedOn}}</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

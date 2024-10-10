@@ -14,7 +14,7 @@ public class FormRouter extends Jooby {
         var sessionService = state.getSessionService();
         var gameService = state.getGameService();
 
-        setWorker(Threading.VIRTUAL_EXECUTOR);
+        setWorker(Threading.EXECUTOR);
 
         post("/forms/signup", ctx -> {
             var form = ctx.form();
