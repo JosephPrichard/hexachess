@@ -2,13 +2,11 @@ package services;
 
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import models.UserEntity;
-import org.apache.commons.dbutils.QueryRunner;
 import org.junit.jupiter.api.*;
+import utils.Config;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.List;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -27,10 +25,8 @@ public class UserDaoTest {
     }
 
     @BeforeEach
-    public void beforeEach() throws SQLException {
-        new QueryRunner(ds).execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
-        userDao.createExtensions();
-        userDao.createTable();
+    public void beforeEach() {
+        Config.createSchema(ds);
     }
 
     @AfterAll
@@ -93,7 +89,6 @@ public class UserDaoTest {
     public void testUpdateStatsUsingResult() {
         // given
         createTestData(userDao);
-        userDao.defineProcedures();
 
         // when
         var changeSet = userDao.updateStatsUsingResult("id1", "id2");

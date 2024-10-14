@@ -7,6 +7,10 @@ public class FileRouter extends Jooby {
     public FileRouter(State state) {
         var filesMap = state.getFiles();
 
+        assets("/css/index.css", "/css/index.css");
+
+        assets("/scripts/chess.js", "/scripts/chess.js");
+
         get("/files/flags/{name}", ctx -> {
             var name = ctx.path("name").toOptional().orElse("");
             var fileBytes = filesMap.get(name);

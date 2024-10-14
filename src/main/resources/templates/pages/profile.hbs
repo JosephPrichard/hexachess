@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Profile - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <script>
+        async function fetchHistories(url) {
+            try {
+                const resp = await fetch(url, { method: 'GET' });
+                return resp.text();
+            } catch (ex) {
+                console.log(ex);
+            }
+        }
+
+        let hasMoreRecords = true;
+
+        window.addEventListener('scroll', function() {
+            const table = document.getElementById('history-table-tbody');
+            if (table == null) {
+                console.error("history-table-tbody is null");
+            }
+
+            const isAtPageBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight;
+            if (!hasMoreRecords || !isAtPageBottom) {
+                return;
+            }
+
+            fetchHistories(`/partials/players/{{user.id}}/history?afterId=${table.lastElementChild.id}`)
+                .then((respHtml) => {
+                    if (respHtml !== "") {
+                        table.insertAdjacentHTML('beforeend', respHtml);
+                    } else {
+                        hasMoreRecords = false;
+                    }
+                });
+        });
+    </script>
+</head>
+<body>
+    {{> partials/banner }}
+    <div class="center-horizontal-container">
+        <div class="panel">
+            <div class="text-lg capped-size">
+                {{user.username}}
+            </div>
+            <img class="flag-lg" src="/files/flags/{{user.country}}.png" alt=""/>
+            <br>
+            <div class="panel-container" style="min-width: 450px;">
+                <div class="panel-elem">
+                    <div class="panel-title">Rank</div>
+                    <div class="panel-text">#{{user.rank}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Elo</div>
+                    <div class="panel-text">{{user.roundedElo}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Peak Elo</div>
+                    <div class="panel-text">{{user.roundedHighestElo}}</div>
+                </div>
+            </div>
+            <div class="panel-container">
+                <div class="panel-elem">
+                    <div class="panel-title">Win%</div>
+                    <div class="panel-text {{user.winRateColor}}">{{user.winRate}}%</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Wins</div>
+                    <div class="panel-text green-color">{{user.wins}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Losses</div>
+                    <div class="panel-text red-color">{{user.losses}}</div>
+                </div>
+                <div class="panel-elem">
+                    <div class="panel-title">Total</div>
+                    <div class="panel-text">{{user.total}}</div>
+                </div>
+            </div>
+            <div class="panel-elem">
+                <div class="panel-title">Joined On</div>
+                <div class="panel-text">{{user.formattedJoinedOn}}</div>
+            </div>
+        </div>
+    </div>
+    <div class="center-horizontal-container" style="margin-top: 50px; margin-bottom: 50px;">
+        <div class="wrapper">
+            <table id="history-table" class="table-container">
+                <thead>
+                <tr>
+                    <th>White</th>
+                    <th>Black</th>
+                    <th>Result</th>
+                    <th>Played On</th>
+                </tr>
+                </thead>
+                <tbody id="history-table-tbody">
+                {{> partials/historyList historyList}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

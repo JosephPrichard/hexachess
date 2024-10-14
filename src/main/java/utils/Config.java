@@ -2,8 +2,10 @@ package utils;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.dbutils.QueryRunner;
 import web.Router;
 
+import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -81,5 +85,30 @@ public class Config {
         }
 
         return files;
+    }
+
+    public static void executeQuery(QueryRunner runner, String path) {
+        var classLoader = Thread.currentThread().getContextClassLoader();
+        try (var inputStream = classLoader.getResourceAsStream(path)) {
+            if (inputStream == null) {
+                throw new RuntimeException("Expected input stream to be non null");
+            }
+            var sql = new String(inputStream.readAllBytes());
+            runner.update(sql);
+        } catch (SQLException | IOException ex) {
+            LOGGER.error("Error occurred while creating schema " + ex);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static void createSchema(DataSource ds) {
+        try {
+            var runner = new QueryRunner(ds);
+            runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+            executeQuery(runner, "database/schema.sql");
+        } catch (SQLException ex) {
+            LOGGER.error("Error occurred while creating schema " + ex);
+            throw new RuntimeException(ex);
+        }
     }
 }

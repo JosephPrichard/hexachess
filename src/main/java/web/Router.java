@@ -58,6 +58,7 @@ public class Router extends Jooby {
 
         mount(new FileRouter(state));
         mount(new PageRouter(state));
+        mount(new PartialsRouter(state));
         mount(new FormRouter(state));
         mount(new WsRouter(state));
     }

@@ -1,10 +1,8 @@
 package web;
 
 import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Options;
 import com.github.jknack.handlebars.Template;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.IOException;
@@ -13,25 +11,31 @@ import java.io.IOException;
 @NoArgsConstructor
 public class Templates {
 
-    private Template indexTemplate;
-    private Template loginTemplate;
-    private Template registerTemplate;
-    private Template leaderboardTemplate;
-    private Template profileTemplate;
-    private Template currentTemplate;
-    private Template historyTemplate;
-    private Template searchTemplate;
-    private Template errorTemplate;
+    Template indexTemplate;
+    Template loginTemplate;
+    Template registerTemplate;
+    Template leaderboardTemplate;
+    Template profileTemplate;
+    Template currentGamesTemplate;
+    Template gameHistoryTemplate;
+    Template searchTemplate;
+    Template errorTemplate;
+
+    Template historyListTemplate;
 
     public Templates(Handlebars handlebars) throws IOException {
-        indexTemplate =  handlebars.compile("index");
-        registerTemplate = handlebars.compile("register");
-        loginTemplate = handlebars.compile("login");
-        leaderboardTemplate = handlebars.compile("leaderboard");
-        profileTemplate = handlebars.compile("profile");
-        currentTemplate = handlebars.compile("current-games");
-        historyTemplate = handlebars.compile("history-games");
-        searchTemplate = handlebars.compile("search-players");
-        errorTemplate = handlebars.compile("error");
+        // pages
+        indexTemplate =  handlebars.compile("/pages/index");
+        registerTemplate = handlebars.compile("/pages/register");
+        loginTemplate = handlebars.compile("/pages/login");
+        leaderboardTemplate = handlebars.compile("/pages/leaderboard");
+        profileTemplate = handlebars.compile("/pages/profile");
+        currentGamesTemplate = handlebars.compile("/pages/currentGames");
+        gameHistoryTemplate = handlebars.compile("/pages/historyGames");
+        searchTemplate = handlebars.compile("/pages/searchPlayers");
+        errorTemplate = handlebars.compile("/pages/error");
+
+        // partials
+        historyListTemplate = handlebars.compile("partials/historyList");
     }
 }

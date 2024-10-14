@@ -33,7 +33,10 @@ public class WsRouter extends Jooby {
 
             var gameId = gameIdSlug.toString();
             var player = dictionary.getSessionOrDefault(sessionId);
-            assert player != null;
+
+            if (player == null) {
+                throw new RuntimeException("Expected player to be non null");
+            }
 
             configurer.onConnect(handleGameConnect(state, gameId, player));
 

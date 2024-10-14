@@ -18,14 +18,14 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class State {
-    private UserDao userDao;
-    private HistoryDao historyDao;
-    private RemoteDict remoteDict;
-    private GameService gameService;
-    private SessionService sessionService;
-    private Broadcaster broadcaster;
-    private Templates templates;
-    private Map<String, byte[]> files;
+    UserDao userDao;
+    HistoryDao historyDao;
+    RemoteDict remoteDict;
+    GameService gameService;
+    SessionService sessionService;
+    Broadcaster broadcaster;
+    Templates templates;
+    Map<String, byte[]> files;
 
     private final ObjectMapper jsonMapper = new ObjectMapper()
         .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)

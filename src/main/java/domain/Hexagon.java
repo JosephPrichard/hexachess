@@ -28,8 +28,8 @@ public class Hexagon {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Move {
-        private Hexagon from;
-        private Hexagon to;
+        Hexagon from;
+        Hexagon to;
 
         public Move deepCopy() {
             return new Move(from.deepCopy(), to.deepCopy());
@@ -40,8 +40,8 @@ public class Hexagon {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PieceMoves {
-        private Hexagon hex;
-        private List<Hexagon> moves;
+        Hexagon hex;
+        List<Hexagon> moves;
 
         public PieceMoves deepCopy() {
             return new PieceMoves(hex.deepCopy(), moves.stream().map(Hexagon::deepCopy).toList());
@@ -51,8 +51,8 @@ public class Hexagon {
     public static final Hexagon[] ORDERED = getOrdered();
     public static final int MIDPOINT = 5;
 
-    private int file;
-    private int rank;
+    int file;
+    int rank;
 
     public static Hexagon of(int file, int rank) {
         return new Hexagon(file, rank);

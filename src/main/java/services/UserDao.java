@@ -37,103 +37,16 @@ public class UserDao {
         runner = new QueryRunner(ds);
     }
 
-    public void createExtensions() {
-        try {
-            var sql = "BEGIN; CREATE EXTENSION pg_trgm; END;";
-            runner.execute(sql);
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public void createTable()  {
-        try {
-            var sql = """
-                BEGIN;
-                    CREATE TABLE users (
-                        id VARCHAR NOT NULL,
-                        username VARCHAR NOT NULL,
-                        country VARCHAR,
-                        elo NUMERIC NOT NULL,
-                        highestElo NUMERIC NOT NULL,
-                        wins INTEGER NOT NULL,
-                        losses INTEGER NOT NULL,
-                        joinedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        password VARCHAR NOT NULL,
-                        salt VARCHAR NOT NULL,
-                        PRIMARY KEY (id));
-                    
-                    CREATE TABLE users_metadata (
-                        id NUMERIC,
-                        count INTEGER,
-                        PRIMARY KEY (id));
-                        
-                    CREATE INDEX idxTrgmUsername ON users USING GIST (username gist_trgm_ops);
-                    CREATE INDEX idxUsername ON users(username);
-                    CREATE INDEX idxElo ON users(elo);
-                END;
-                """;
-            runner.execute(sql);
-
-            sql = "BEGIN; INSERT INTO users_metadata (id, count) VALUES (1, 0); END;";
-            runner.execute(sql);
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public void defineProcedures() {
-        try {
-            var sql = """
-                BEGIN;
-                    CREATE FUNCTION probabilityWins(IN elo1 NUMERIC, IN elo2 NUMERIC)
-                        RETURNS NUMERIC
-                    LANGUAGE plpgsql
-                    AS $$
-                    BEGIN
-                        RETURN 1.0 / (1.0 + POWER(10, (elo1 - elo2) / 400.0));
-                    END $$;
-        
-                    CREATE PROCEDURE updateStatsUsingResult(
-                        IN winId VARCHAR, IN loseId VARCHAR,
-                        OUT winEloNext NUMERIC, OUT loseEloNext NUMERIC)
-                    LANGUAGE plpgsql
-                    AS $$
-                    DECLARE
-                        winElo NUMERIC;
-                        loseElo NUMERIC;
-                    BEGIN
-                        SELECT elo INTO winElo FROM users WHERE id = winId;
-                        SELECT elo INTO loseElo FROM users WHERE id = loseId;
-                        
-                        winEloNext = winElo + (30 * (1 - probabilityWins(loseElo, winElo)));
-                        loseEloNext = loseElo + ((30 * probabilityWins(winElo, loseElo)) * -1);
-                       
-                        UPDATE users
-                        SET elo = winEloNext, wins = wins + 1, highestElo = GREATEST(highestElo, winEloNext)
-                        WHERE id = winId;
-                        
-                        UPDATE users
-                        SET elo = loseEloNext, losses = losses + 1
-                        WHERE id = loseId;
-                    END $$;
-                END;""";
-            runner.execute(sql);
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     @Data
     @AllArgsConstructor
     public static class UserInst {
-        private String newId;
-        private String username;
-        private String password;
-        private String country;
-        private float elo;
-        private int wins;
-        private int losses;
+        String newId;
+        String username;
+        String password;
+        String country;
+        float elo;
+        int wins;
+        int losses;
     }
 
     public UserInst insert(String username, String password) {
@@ -153,16 +66,18 @@ public class UserDao {
     }
 
     public void insert(UserInst inst) {
-        try {
-            var salt = generateSalt();
-            var saltedPassword = inst.getPassword() + salt;
-            var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
+        var salt = generateSalt();
+        var saltedPassword = inst.getPassword() + salt;
+        var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
 
-            var sql = """
-                BEGIN;
-                    INSERT INTO users (id, username, country, elo, highestElo, wins, losses, password, salt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-                    UPDATE users_metadata SET count = count + 1 WHERE id = 1;
-                END;""";
+        var sql = """
+            BEGIN;
+            INSERT INTO
+                users (id, username, country, elo, highestElo, wins, losses, password, salt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            UPDATE users_metadata SET count = count + 1 WHERE id = 1;
+            END;""";
+        try {
             runner.execute(sql, inst.getNewId(), inst.getUsername(), inst.getCountry(),
                 inst.getElo(), inst.getElo(), inst.getWins(), inst.getLosses(),
                 hashedPassword, salt);
@@ -175,17 +90,16 @@ public class UserDao {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AccountCreds {
-        private String id;
-        private String username;
-        private String password;
-        private String salt;
+        String id;
+        String username;
+        String password;
+        String salt;
     }
 
     public Player verify(String username, String inputPassword) {
+        var sql = "SELECT id, username, password, salt FROM users WHERE username = ?";
         try {
-            var sql = "SELECT id, username, password, salt FROM users WHERE username = ?";
             var accountCreds = runner.query(sql, CREDS_MAPPER, username);
-
             if (accountCreds == null) {
                 return null;
             }
@@ -248,11 +162,11 @@ public class UserDao {
     }
 
     public UserEntity getById(String id) {
-        try {
-            var sql = """
+        var sql = """
             SELECT id, username, country, elo, highestElo, wins, losses, joinedOn
             FROM users
             WHERE id = ?""";
+        try {
             return runner.query(sql, USER_MAPPER, id);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -260,12 +174,12 @@ public class UserDao {
     }
 
     public UserEntity getByIdWithRank(String id) {
-        try {
-            var sql = """
+        var sql = """
             SELECT u1.id, u1.username, u1.country, u1.elo, u1.highestElo, u1.wins, u1.losses, u1.joinedOn,
                 (SELECT COUNT(*) FROM users u2 WHERE u2.elo >= u1.elo) as rank
             FROM users u1
             WHERE u1.id = ?""";
+        try {
             return runner.query(sql, USER_MAPPER, id);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -277,13 +191,12 @@ public class UserDao {
     }
 
     public List<UserEntity> getByIds(List<String> ids) {
-        try {
-            var sql = """
+        var sql = """
             SELECT id, username, country, elo, wins, losses
             FROM users
-            WHERE id IN""";
-            sql += ids.stream().map(x -> "?").collect(Collectors.joining(",", " (", ") "));
-
+            WHERE 1 = 1 AND"""
+              + ids.stream().map(x -> "?").collect(Collectors.joining(",", " id IN (", ") "));
+        try {
             return runner.query(sql, USER_LIST_MAPPER, ids.toArray());
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -291,8 +204,8 @@ public class UserDao {
     }
 
     public List<UserEntity> getAll() {
+        var sql = "SELECT id, username, country, elo, wins, losses FROM users";
         try {
-            var sql = "SELECT id, username, country, elo, wins, losses FROM users";
             return runner.query(sql, USER_LIST_MAPPER);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -300,17 +213,16 @@ public class UserDao {
     }
 
     public List<UserEntity> getLeaderboard(int page, int perPage) {
-        try {
-            var sql = """
+        var sql = """
             SELECT id, username, country, elo, wins, losses
             FROM users
-            ORDER BY elo DESC LIMIT ? OFFSET ?
-            """;
+            ORDER BY elo DESC LIMIT ? OFFSET ?""";
 
-            page = Math.max(page, 1);
-            var offset = (page - 1) * perPage;
+        page = Math.max(page, 1);
+        var offset = (page - 1) * perPage;
+
+        try {
             var results = runner.query(sql, USER_LIST_MAPPER, perPage, offset);
-
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank((page - 1) * perPage + i + 1);
             }
@@ -321,17 +233,17 @@ public class UserDao {
     }
 
     public List<UserEntity> searchByName(String name, int page, int perPage) {
-        try {
-            var sql = """
+        var sql = """
             SELECT id, username, country, elo, wins, losses, (username <-> ?) as rank
             FROM users
-            WHERE username % ?
+            WHERE 1 = 1 AND username % ?
             ORDER BY rank DESC LIMIT ? OFFSET ?""";
 
-            page = Math.max(page, 1);
-            var offset = (page - 1) * perPage;
-            var results = runner.query(sql, USER_LIST_MAPPER, name, name, perPage, offset);
+        page = Math.max(page, 1);
+        var offset = (page - 1) * perPage;
 
+        try {
+            var results = runner.query(sql, USER_LIST_MAPPER, name, name, perPage, offset);
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank(i + 1);
             }
@@ -342,8 +254,8 @@ public class UserDao {
     }
 
     public int countUsers() {
+        var sql = "SELECT count FROM users_metadata";
         try {
-            var sql = "SELECT count FROM users_metadata";
             return runner.query(sql, INT_MAPPER);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);

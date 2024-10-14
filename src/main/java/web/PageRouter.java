@@ -1,10 +1,13 @@
 package web;
 
+import domain.ChessBoard;
 import io.jooby.Jooby;
 import io.jooby.MediaType;
+import io.jooby.StatusCode;
 import models.*;
 import utils.Threading;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,9 +20,17 @@ public class PageRouter extends Jooby {
         var remoteDict = state.getRemoteDict();
         var templates = state.getTemplates();
 
-        setWorker(Threading.EXECUTOR);
+        // write the index page at build time since it never changes...
+        String indexHtml;
+        try {
+            var board = ChessBoard.initial();
+            var boardJson = board.writePiecesAsJsonString();
+            indexHtml = templates.getIndexTemplate().apply(boardJson);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
 
-        assets("/css/index.css", "/css/index.css");
+        setWorker(Threading.EXECUTOR);
 
         use(next -> ctx -> {
             ctx.setResponseType(MediaType.HTML);
@@ -27,6 +38,7 @@ public class PageRouter extends Jooby {
         });
 
         get("*", ctx -> {
+            ctx.setResponseCode(StatusCode.NOT_FOUND_CODE);
             var template = templates.getErrorTemplate();
             var message = """
                 Sorry, the page you are looking for does not exist.
@@ -35,9 +47,9 @@ public class PageRouter extends Jooby {
             return template.apply(new ErrorView(404, message));
         });
 
-        get("/", ctx -> templates.getIndexTemplate().apply(null));
+        get("/", ctx -> indexHtml);
 
-        get("/index", ctx -> templates.getIndexTemplate().apply(null));
+        get("/index", ctx -> indexHtml);
 
         get("/leaderboard", ctx -> {
             try {
@@ -90,33 +102,33 @@ public class PageRouter extends Jooby {
             }
             var userId = userIdSlug.toString();
 
-            var entity = userDao.getByIdWithRank(userId);
+            var userEntity = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
+            var historyList = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 5), Threading.EXECUTOR);
 
-//            var entity = userDao.getById(userId);
+//            var userEntity = userDao.getById(userId);
 //            var rank = remoteDict.getLeaderboardRank(entity.getId());
-//            entity.setRank(rank);
+//            userEntity.setRank(rank);
 
             var template = templates.getProfileTemplate();
-            return template.apply(entity);
+            return template.apply(new ProfileView(userEntity.get(), historyList.get()));
         });
 
-        get("/games/history", ctx -> {
-            var whiteIdParam = ctx.query("whiteId");
-            var whiteId = whiteIdParam.toOptional().orElse(null);
-
-            var blackIdParam = ctx.query("blackId");
-            var blackId = blackIdParam.toOptional().orElse(null);
-
-            var cursorParam = ctx.query("cursor");
-            var cursor = cursorParam.toOptional().orElse(null);
-
-            return historyDao.getHistories(whiteId, blackId, cursor);
-        });
-
-        get("/games/current", ctx -> {
-            var cursorParam = ctx.query("cursor");
-            var cursor = cursorParam.isPresent() ? cursorParam.doubleValue() : null;
-            return gameService.getManyKeys(cursor);
-        });
+//        get("/games/history", ctx -> {
+//            var whiteIdParam = ctx.query("whiteId");
+//            var whiteId = whiteIdParam.toOptional().orElse(null);
+//
+//            var blackIdParam = ctx.query("blackId");
+//            var blackId = blackIdParam.toOptional().orElse(null);
+//
+//            Long afterId = ctx.query("afterId").toOptional().map(Long::parseUnsignedLong).orElse(null);
+//
+//            return historyDao.getHistories(whiteId, blackId, afterId, 20);
+//        });
+//
+//        get("/games/current", ctx -> {
+//            var cursorParam = ctx.query("cursor");
+//            var cursor = cursorParam.isPresent() ? cursorParam.doubleValue() : null;
+//            return gameService.getManyKeys(cursor);
+//        });
     }
 }

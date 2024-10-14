@@ -11,7 +11,6 @@ import web.PageRouter;
 import web.State;
 import web.Templates;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -19,15 +18,19 @@ import static org.mockito.Mockito.*;
 public class PageRouterTest {
 
     @Test
-    public void testGetStats() {
+    public void testGetPlayer() {
         // given
         var state = new State();
-        var accountId = "1";
+        var userId = "1";
         var user = new UserEntity("1", "testUser", "us", 1050, 5, 3, 0);
 
-        var mockAccountDao = mock(UserDao.class);
-        when(mockAccountDao.getById(accountId)).thenReturn(user);
-        state.setUserDao(mockAccountDao);
+        var mockUserDao = mock(UserDao.class);
+        when(mockUserDao.getByIdWithRank(userId)).thenReturn(user);
+        state.setUserDao(mockUserDao);
+
+        var mockHistoryDao = mock(HistoryDao.class);
+        when(mockHistoryDao.getUserHistories(eq(userId), eq(null), anyInt())).thenReturn(List.of());
+        state.setHistoryDao(mockHistoryDao);
 
         var mockTemplate = mock(Template.class);
         var templates = new Templates();
@@ -37,10 +40,11 @@ public class PageRouterTest {
         var mockRouter = new MockRouter(new PageRouter(state));
 
         // when
-        mockRouter.get("/players/" + accountId);
+        mockRouter.get("/players/" + userId);
 
         // then
-        verify(mockAccountDao, times(1)).getById(accountId);
+        verify(mockUserDao, times(1)).getByIdWithRank(eq(userId));
+        verify(mockHistoryDao, times(1)).getUserHistories(eq(userId), eq(null), anyInt());
     }
 
     @Test
@@ -67,44 +71,5 @@ public class PageRouterTest {
 
         // then
         verify(mockAccountDao, times(1)).getLeaderboard(1, 25);
-    }
-
-    @Test
-    public void testGetHistory() {
-        // given
-        var state = new State();
-
-        var mockHistoryDao = mock(HistoryDao.class);
-        when(mockHistoryDao.getHistories("1", "2", "3")).thenReturn(List.of());
-        state.setHistoryDao(mockHistoryDao);
-
-        var mockRouter = new MockRouter(new PageRouter(state));
-
-        // when
-        var result = mockRouter.get("/games/history", new MockContext().setQueryString("whiteId=1&blackId=2&cursor=3"));
-
-        // then
-        verify(mockHistoryDao, times(1)).getHistories("1", "2", "3");
-        Assertions.assertEquals(List.of(), result.value());
-    }
-
-    @Test
-    public void testGetManyGames() {
-        // given
-        var state = new State();
-        var scanResult = new RemoteDict.GetGameKeysResult(22d, List.of());
-
-        var mockgameService = mock(GameService.class);
-        when(mockgameService.getManyKeys(12d)).thenReturn(scanResult);
-        state.setGameService(mockgameService);
-
-        var mockRouter = new MockRouter(new PageRouter(state));
-
-        // when
-        var result = mockRouter.get("/games/current", new MockContext().setQueryString("cursor=12"));
-
-        // then
-        verify(mockgameService, times(1)).getManyKeys(12d);
-        Assertions.assertEquals(scanResult, result.value());
     }
 }

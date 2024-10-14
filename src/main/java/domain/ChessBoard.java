@@ -1,5 +1,6 @@
 package domain;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -53,7 +54,7 @@ public class ChessBoard {
     }
 
     private Turn turn;
-    private final byte[][] pieces;
+    private final byte[][] pieces; // jagged array storing the pieces with [file][rank] format
 
     public ChessBoard(Turn turn) {
         pieces = new byte[FILES][];
@@ -270,5 +271,28 @@ public class ChessBoard {
         }
 
         return toString((hex) -> isAttacked[hex.getFile()][hex.getRank()]);
+    }
+
+    public String writePiecesAsJsonString() {
+        var sb = new StringBuilder();
+        sb.append("[");
+
+        for (int file = 0; file < pieces.length; file++) {
+            var piecesFile = pieces[file];
+            sb.append("[");
+            for (int rank = 0; rank < piecesFile.length; rank++) {
+                sb.append(piecesFile[rank]);
+                if (rank < piecesFile.length - 1) {
+                    sb.append(",");
+                }
+            }
+            sb.append("]");
+            if (file < pieces.length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+
+        return sb.toString();
     }
 }

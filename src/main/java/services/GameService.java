@@ -115,7 +115,7 @@ public class GameService {
         try {
             var whiteId =  state.getWhitePlayer().getId();
             var blackId = state.getBlackPlayer().getId();
-            var result = isWhiteWin ? HistoryEntity.WHITE_WIN : HistoryEntity.WHITE_LOSS;
+            var result = isWhiteWin ? HistoryEntity.WHITE_WIN : HistoryEntity.BLACK_WIN;
             var winId = isWhiteWin ? whiteId : blackId;
             var loseId = isWhiteWin ? blackId : whiteId;
 

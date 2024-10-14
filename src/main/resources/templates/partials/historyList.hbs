@@ -1,0 +1,20 @@
+{{#each this as |history|}}
+    <tr id="{{history.id}}">
+        <td style="width: 25%">
+            <a href="/players/{{history.whiteId}}" class="text-ul">{{history.whiteName}}</a>
+            <img class="flag" src="/files/flags/{{history.whiteCountry}}.png" alt=""/>
+            <span class="{{history.whiteEloColor}}">{{history.whiteEloDiff}}</span>
+        </td>
+        <td style="width: 25%">
+            <a href="/players/{{history.blackId}}" class="text-ul">{{history.blackName}}</a>
+            <img class="flag" src="/files/flags/{{history.blackCountry}}.png" alt=""/>
+            <span class="{{history.blackEloColor}}" >{{history.blackEloDiff}}</span>
+        </td>
+        <td style="width: 25%">
+            {{history.formattedResult}}
+        </td>
+        <td style="width: 25%;">
+            {{history.formattedPlayedOn}}
+        </td>
+    </tr>
+{{/each}}

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import utils.Constants;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -25,6 +26,14 @@ public class UserEntity {
     int rank;
     @EqualsAndHashCode.Exclude
     Timestamp joinedOn;
+
+    public UserEntity(String id, String username, String country, float elo, int wins, int losses) {
+       this(id, username, country, elo, elo, wins, losses, 0, null);
+    }
+
+    public UserEntity(String id, String username, String country, float elo, int wins, int losses, int rank) {
+        this(id, username, country, elo, elo, wins, losses, rank, null);
+    }
 
     public int getWinRate() {
         var total = getTotal();
@@ -50,20 +59,12 @@ public class UserEntity {
     public String getWinRateColor() {
         var winRate = getWinRate();
         if (winRate > 50) {
-            return "green-color";
+            return Constants.GREEN_COLOR;
         } else if (winRate < 50) {
-            return "red-color";
+            return Constants.RED_COLOR;
         } else {
-            return "yellow-color";
+            return Constants.YELLOW_COLOR;
         }
-    }
-
-    public UserEntity(String id, String username, String country, float elo, int wins, int losses) {
-       this(id, username, country, elo, elo, wins, losses, 0, null);
-    }
-
-    public UserEntity(String id, String username, String country, float elo, int wins, int losses, int rank) {
-        this(id, username, country, elo, elo, wins, losses, rank, null);
     }
 
     public void roundElo() {

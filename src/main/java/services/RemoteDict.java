@@ -84,8 +84,8 @@ public class RemoteDict {
     @Data
     @AllArgsConstructor
     public static class GetGameKeysResult {
-        private final Double nextCursor;
-        private final List<String> keys;
+        final Double nextCursor;
+        final List<String> keys;
     }
 
     public GetGameKeysResult getGameKeys(Double cursor, int count) {
