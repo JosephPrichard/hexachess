@@ -3,39 +3,12 @@
     <head>
         <title>Home - Hexachess</title>
         <link rel="stylesheet" href="/css/index.css">
-        <script src="/scripts/chess.js"></script>
+        <script src="/scripts/index.js"></script>
     </head>
     <body>
         {{> partials/banner }}
         <div class="center-horizontal-container">
             <div class="center-vertical-container">
-                <div id="chess-board" class="chess-board"></div>
-                <script type="application/json" id="chess-board-json">
-                    {{{this}}}
-                </script>
-                <script>
-                    const chessBoardJson = document.getElementById("chess-board-json");
-                    if (chessBoardJson == null) {
-                        console.error("chess-board-json is null");
-                    }
-                    const chessBoard = document.getElementById("chess-board");
-                    if (chessBoard == null) {
-                        console.error("chess-board is null");
-                    }
-
-                    console.log("Initial board: ", chessBoardJson.innerHTML);
-
-                    const initialBoard = JSON.parse(chessBoardJson.innerHTML);
-                    renderBoard(chessBoard, initialBoard);
-                </script>
-                <div>
-                    <a href="/" class="button-grey button-scaled">
-                        Create a Game
-                    </a>
-                    <a href="/" class="button-grey button-scaled">
-                        Challenge a Friend
-                    </a>
-                </div>
             </div>
         </div>
     </body>

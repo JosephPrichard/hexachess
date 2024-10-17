@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static utils.Log.LOGGER;
 
@@ -46,6 +47,19 @@ public class RemoteDict {
             return null;
         }
         return Serializer.deserialize(bytes, GameState.class);
+    }
+
+    public List<GameState> getGames(Stream<String> ids) {
+        expireGames();
+
+        var fullIds = ids.map(id -> ("game:" + id).getBytes()).toList();
+
+        var bytesList = jedis.mget(fullIds.toArray(byte[][]::new));
+        if (bytesList == null) {
+            return null;
+        }
+
+        return bytesList.stream().map((bytes) -> Serializer.deserialize(bytes, GameState.class)).toList();
     }
 
     public GameState setGame(String id, GameState gameState) {
@@ -83,12 +97,12 @@ public class RemoteDict {
 
     @Data
     @AllArgsConstructor
-    public static class GetGameKeysResult {
-        final Double nextCursor;
-        final List<String> keys;
+    public static class GetGamesResult {
+        Double nextCursor;
+        List<GameState> gameStates;
     }
 
-    public GetGameKeysResult getGameKeys(Double cursor, int count) {
+    public GetGamesResult getGames(Double cursor, int count) {
         expireGames();
 
         cursor = cursor != null ? cursor : 0;
@@ -100,10 +114,8 @@ public class RemoteDict {
             nextCursor = tuples.remove(tuples.size() - 1).getScore();
         }
 
-        var gameKeys = tuples.stream()
-            .map(Tuple::getElement)
-            .toList();
-        return new GetGameKeysResult(nextCursor, gameKeys);
+        var gameStates = getGames(tuples.stream().map(Tuple::getElement));
+        return new GetGamesResult(nextCursor, gameStates);
     }
 
     public Player getSession(String sessionId) {

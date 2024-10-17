@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Home - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <script>
+        function preview() {
+
+        }
+    </script>
+</head>
+<body>
+{{> partials/banner }}
+<div class="center-horizontal-container">
+    <div class="wrapper">
+        <form class="form-wrapper">
+            <div class="input-wrapper">
+                <input id="white-name" name="whitename" class="form-input" placeholder="White Player" oninput=""/>
+            </div>
+            <div class="input-wrapper">
+                <input id="black-name" name="blackname" class="form-input" placeholder="Black Player" oninput=""/>
+            </div>
+            <br>
+            <input class="button-grey" type="submit" value="Search">
+        </form>
+        <table id="history-table" class="table-container" style="margin-bottom: 50px;">
+            <thead>
+            <tr>
+                <th>White</th>
+                <th>Black</th>
+                <th>Result</th>
+                <th>Played On</th>
+            </tr>
+            </thead>
+            <tbody id="history-table-tbody">
+                {{> partials/historyList historyList }}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

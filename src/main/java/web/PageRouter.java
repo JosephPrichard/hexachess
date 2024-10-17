@@ -1,17 +1,52 @@
 package web;
 
-import domain.ChessBoard;
 import io.jooby.Jooby;
 import io.jooby.MediaType;
+import io.jooby.Route;
 import io.jooby.StatusCode;
-import models.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import models.HistoryEntity;
+import models.Pagination;
+import models.UserEntity;
 import utils.Threading;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static utils.Log.LOGGER;
+
 public class PageRouter extends Jooby {
+
+    @Data
+    @AllArgsConstructor
+    public static class LeaderboardView {
+        List<UserEntity> userList;
+        Pagination pages;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class ProfileView {
+        UserEntity user;
+        List<HistoryEntity> historyList;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class SearchView {
+        String searchText;
+        List<UserEntity> userList;
+        Pagination pages;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class GameView {
+        String whiteName;
+        String blackName;
+        List<HistoryEntity> historyList;
+    }
 
     public PageRouter(State state) {
         var userDao = state.getUserDao();
@@ -19,16 +54,6 @@ public class PageRouter extends Jooby {
         var gameService = state.getGameService();
         var remoteDict = state.getRemoteDict();
         var templates = state.getTemplates();
-
-        // write the index page at build time since it never changes...
-        String indexHtml;
-        try {
-            var board = ChessBoard.initial();
-            var boardJson = board.writePiecesAsJsonString();
-            indexHtml = templates.getIndexTemplate().apply(boardJson);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
 
         setWorker(Threading.EXECUTOR);
 
@@ -38,18 +63,28 @@ public class PageRouter extends Jooby {
         });
 
         get("*", ctx -> {
-            ctx.setResponseCode(StatusCode.NOT_FOUND_CODE);
             var template = templates.getErrorTemplate();
             var message = """
                 Sorry, the page you are looking for does not exist.
                 You might have followed a broken link or entered a URL that doesn't exist on this site.
                 """;
-            return template.apply(new ErrorView(404, message));
+            var code = StatusCode.NOT_FOUND_CODE;
+            ctx.setResponseCode(code);
+            return template.apply(new Router.ErrorView(code, message));
         });
 
-        get("/", ctx -> indexHtml);
+        Route.Handler indexHandler = (ctx) -> {
+            var gamesResult = gameService.getGames(null);
 
-        get("/index", ctx -> indexHtml);
+            var template = templates.getIndexTemplate();
+            return template.apply(gamesResult);
+        };
+
+        get("/", indexHandler);
+
+        get("/index", indexHandler);
+
+        get("/play", indexHandler);
 
         get("/leaderboard", ctx -> {
             try {
@@ -65,12 +100,14 @@ public class PageRouter extends Jooby {
                 var template = templates.getLeaderboardTemplate();
 
                 return template.apply(new LeaderboardView(entityList.get(),
-                    PaginationView.withTotal("?", page, totalPages.get())));
+                    Pagination.withTotal("?", page, totalPages.get())));
 //                return template.apply(new LeaderboardView(entityList,
 //                    PaginationView.withTotal("?", page, leaderboard.getPageCount())));
             } catch (NumberFormatException ex) {
+                var code = StatusCode.BAD_REQUEST_CODE;
+                ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new ErrorView(404, "Invalid param 'page': must be a positive integer."));
+                return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
 
@@ -81,29 +118,33 @@ public class PageRouter extends Jooby {
 
                 var template = templates.getSearchTemplate();
                 if (name.isEmpty()) {
-                    return template.apply(new SearchView(name, List.of(), PaginationView.ofUnlimited("?", page)));
+                    return template.apply(new SearchView(name, List.of(), Pagination.ofUnlimited("?", page)));
                 }
 
                 var entityList = userDao.searchByName(name, page, 20);
 
                 return template.apply(new SearchView(name, entityList,
-                    PaginationView.ofUnlimited(String.format("?username=%s&", name), page)));
+                    Pagination.ofUnlimited(String.format("?username=%s&", name), page)));
             } catch (NumberFormatException ex) {
+                var code = StatusCode.BAD_REQUEST_CODE;
+                ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new ErrorView(404, "Invalid param 'page': must be a positive integer."));
+                return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
 
         get("/players/{id}", ctx -> {
             var userIdSlug = ctx.path("id");
             if (userIdSlug.isMissing()) {
+                var code = StatusCode.BAD_REQUEST_CODE;
+                ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new ErrorView(404, "Invalid param 'id': must contain id within slug."));
+                return template.apply(new Router.ErrorView(code, "Invalid param 'id': must contain id within slug."));
             }
             var userId = userIdSlug.toString();
 
             var userEntity = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
-            var historyList = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 5), Threading.EXECUTOR);
+            var historyList = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 10), Threading.EXECUTOR);
 
 //            var userEntity = userDao.getById(userId);
 //            var rank = remoteDict.getLeaderboardRank(entity.getId());
@@ -113,22 +154,24 @@ public class PageRouter extends Jooby {
             return template.apply(new ProfileView(userEntity.get(), historyList.get()));
         });
 
-//        get("/games/history", ctx -> {
-//            var whiteIdParam = ctx.query("whiteId");
-//            var whiteId = whiteIdParam.toOptional().orElse(null);
-//
-//            var blackIdParam = ctx.query("blackId");
-//            var blackId = blackIdParam.toOptional().orElse(null);
-//
-//            Long afterId = ctx.query("afterId").toOptional().map(Long::parseUnsignedLong).orElse(null);
-//
-//            return historyDao.getHistories(whiteId, blackId, afterId, 20);
-//        });
-//
-//        get("/games/current", ctx -> {
-//            var cursorParam = ctx.query("cursor");
-//            var cursor = cursorParam.isPresent() ? cursorParam.doubleValue() : null;
-//            return gameService.getManyKeys(cursor);
-//        });
+        get("/games", ctx -> {
+            var whiteId = ctx.query("whiteId").toOptional().orElse(null);
+            var blackId = ctx.query("blackId").toOptional().orElse(null);
+            var historyList = historyDao.getHistories(whiteId, blackId, null, 20);
+
+            var template = templates.getGameHistoryTemplate();
+            return template.apply(new GameView(whiteId, blackId, historyList));
+        });
+
+        get("/profile", ctx -> {
+            var cookie = ctx.header("Cookie");
+            if (cookie.isMissing()) {
+                return ctx.sendRedirect("/login");
+            } else {
+                var sessionId = cookie.toString();
+                var player = remoteDict.getSession(sessionId);
+                return ctx.sendRedirect("/players/" + player.getId());
+            }
+        });
     }
 }

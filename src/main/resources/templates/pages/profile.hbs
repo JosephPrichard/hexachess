@@ -7,7 +7,7 @@
         async function fetchHistories(url) {
             try {
                 const resp = await fetch(url, { method: 'GET' });
-                return resp.text();
+                return [await resp.text(), resp];
             } catch (ex) {
                 console.log(ex);
             }
@@ -15,26 +15,27 @@
 
         let hasMoreRecords = true;
 
-        window.addEventListener('scroll', function() {
+        function attemptInfiniteScroll() {
             const table = document.getElementById('history-table-tbody');
             if (table == null) {
                 console.error("history-table-tbody is null");
             }
-
             const isAtPageBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight;
             if (!hasMoreRecords || !isAtPageBottom) {
                 return;
             }
-
-            fetchHistories(`/partials/players/{{user.id}}/history?afterId=${table.lastElementChild.id}`)
-                .then((respHtml) => {
-                    if (respHtml !== "") {
-                        table.insertAdjacentHTML('beforeend', respHtml);
+            fetchHistories(`/partials/player-history?id={{user.id}}&afterId=${table.lastElementChild.id}`)
+                .then(([html, resp]) => {
+                    if (resp.ok) {
+                        table.insertAdjacentHTML('beforeend', html);
                     } else {
                         hasMoreRecords = false;
                     }
                 });
-        });
+        }
+
+        window.onload = attemptInfiniteScroll;
+        window.addEventListener('scroll', attemptInfiniteScroll);
     </script>
 </head>
 <body>
@@ -96,7 +97,7 @@
                 </tr>
                 </thead>
                 <tbody id="history-table-tbody">
-                {{> partials/historyList historyList}}
+                    {{> partials/historyList historyList}}
                 </tbody>
             </table>
         </div>

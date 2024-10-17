@@ -76,12 +76,12 @@ public class RemoteDictTest {
         remoteDict.setGame(id3, game3);
         remoteDict.setGame(id4, game4);
 
-        var scanResult1 = remoteDict.getGameKeys(null, 2);
-        var scanResult2 = remoteDict.getGameKeys(scanResult1.getNextCursor(), 2);
+        var scanResult1 = remoteDict.getGames(null, 2);
+        var scanResult2 = remoteDict.getGames(scanResult1.getNextCursor(), 2);
 
         // then
-        Assertions.assertEquals(2, scanResult1.getKeys().size());
-        Assertions.assertEquals(2, scanResult2.getKeys().size());
+        Assertions.assertEquals(2, scanResult1.getGameStates().size());
+        Assertions.assertEquals(2, scanResult2.getGameStates().size());
         Assertions.assertNull(scanResult2.getNextCursor());
     }
 

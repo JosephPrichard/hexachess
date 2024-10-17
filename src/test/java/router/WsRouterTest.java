@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import domain.Hexagon;
+import domain.Move;
 import io.jooby.test.MockRouter;
 import io.jooby.test.MockWebSocketClient;
 import lombok.Getter;
@@ -55,7 +56,7 @@ public class WsRouterTest {
         private MockWebSocketClient mockClient;
 
         // simulate a client (much like one that would run on the browser) to test our websocket server
-        public static MockWsClientTest start(MockRouter mockRouter, String gameId, Queue<Hexagon.Move> moves) {
+        public static MockWsClientTest start(MockRouter mockRouter, String gameId, Queue<Move> moves) {
             var jsonMapper = new ObjectMapper()
                 .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
                 .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
@@ -123,10 +124,10 @@ public class WsRouterTest {
         var mockRouter = new MockRouter(new WsRouter(state));
 
         var moves = new LinkedBlockingQueue<>(List.of(
-            new Hexagon.Move(Hexagon.fromNotation("f5"), Hexagon.fromNotation("f6")),
-            new Hexagon.Move(Hexagon.fromNotation("b7"), Hexagon.fromNotation("b6")),
-            new Hexagon.Move(Hexagon.fromNotation("j1"), Hexagon.fromNotation("j2")),
-            new Hexagon.Move(Hexagon.fromNotation("j7"), Hexagon.fromNotation("j6"))));
+            new Move(Hexagon.fromNotation("f5"), Hexagon.fromNotation("f6")),
+            new Move(Hexagon.fromNotation("b7"), Hexagon.fromNotation("b6")),
+            new Move(Hexagon.fromNotation("j1"), Hexagon.fromNotation("j2")),
+            new Move(Hexagon.fromNotation("j7"), Hexagon.fromNotation("j6"))));
 
         var client1 = MockWsClientTest.start(mockRouter, gameId, moves);
         var client2 = MockWsClientTest.start(mockRouter, gameId, moves);

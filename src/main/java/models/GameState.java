@@ -3,6 +3,7 @@ package models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import domain.ChessGame;
 import domain.Hexagon;
+import domain.Move;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,7 +28,7 @@ public class GameState {
     @JsonIgnore
     double touch;
     @JsonIgnore
-    List<Hexagon.Move> moveHistory;
+    List<Move> moveHistory;
 
     public GameState deepCopy() {
         return new GameState(id,
@@ -37,7 +38,7 @@ public class GameState {
             isEnded,
             isFirstPlayerWhite,
             touch,
-            moveHistory.stream().map(Hexagon.Move::deepCopy).toList());
+            moveHistory.stream().map(Move::deepCopy).toList());
     }
 
     public static GameState start(String id) {
@@ -64,7 +65,7 @@ public class GameState {
         return currPlayer.equals(player);
     }
 
-    public void pushMoveHistory(Hexagon.Move move) {
+    public void pushMoveHistory(Move move) {
         moveHistory.add(move);
     }
 }

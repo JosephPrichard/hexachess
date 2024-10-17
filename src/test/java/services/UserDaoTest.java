@@ -192,6 +192,23 @@ public class UserDaoTest {
     }
 
     @Test
+    public void quickSearchByName() {
+        // given
+        createTestData(userDao);
+        userDao.insert(new UserDao.UserInst("id6", "johnny", "password6", "us", 0f, 0, 0));
+        userDao.insert(new UserDao.UserInst("id7", "john", "password7", "us", 0f, 0, 0));
+
+        // when
+        var actualUserList = userDao.quickSearchByName("john");
+
+        // then
+        var expectedUserList = List.of(
+            new UserDao.UserTuple("id6", "johnny"),
+            new UserDao.UserTuple("id7", "john"));
+        Assertions.assertEquals(expectedUserList, actualUserList);
+    }
+
+    @Test
     public void testCountUsers() {
         // given
         createTestData(userDao);

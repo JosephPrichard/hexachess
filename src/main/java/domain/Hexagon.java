@@ -14,40 +14,6 @@ import static domain.ChessBoard.RANKS_PER_FILE;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Hexagon {
-
-    public enum Direction {
-        UP,
-        DOWN,
-        DOWN_LEFT,
-        DOWN_RIGHT,
-        UP_LEFT,
-        UP_RIGHT,
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Move {
-        Hexagon from;
-        Hexagon to;
-
-        public Move deepCopy() {
-            return new Move(from.deepCopy(), to.deepCopy());
-        }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PieceMoves {
-        Hexagon hex;
-        List<Hexagon> moves;
-
-        public PieceMoves deepCopy() {
-            return new PieceMoves(hex.deepCopy(), moves.stream().map(Hexagon::deepCopy).toList());
-        }
-    }
-
     public static final Hexagon[] ORDERED = getOrdered();
     public static final int MIDPOINT = 5;
 
@@ -60,6 +26,15 @@ public class Hexagon {
 
     public Hexagon deepCopy() {
         return new Hexagon(file, rank);
+    }
+
+    public enum Direction {
+        UP,
+        DOWN,
+        DOWN_LEFT,
+        DOWN_RIGHT,
+        UP_LEFT,
+        UP_RIGHT,
     }
 
     public Hexagon walk(Direction[] directions) {

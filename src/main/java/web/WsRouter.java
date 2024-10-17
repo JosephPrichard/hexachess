@@ -2,6 +2,7 @@ package web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import domain.Hexagon;
+import domain.Move;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import io.jooby.WebSocket;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import services.GameService;
 import utils.ErrorResp;
 import utils.Threading;
+import web.State;
 
 import static utils.Log.LOGGER;
 
@@ -54,7 +56,7 @@ public class WsRouter extends Jooby {
         public static final int MOVE = 1;
 
         private int type;
-        private Hexagon.Move move; // unused for forfeit...
+        private Move move; // unused for forfeit...
     }
 
     @Data
@@ -69,7 +71,7 @@ public class WsRouter extends Jooby {
         private int type;
         private String message; // only used for error
         private Player player; // only used for join, says who the joining player is
-        private Hexagon.Move move; // only used for move
+        private Move move; // only used for move
         private GameState gameState; // the current state of the game being played
 
         public static OutputMsg ofError(String message) {
@@ -84,7 +86,7 @@ public class WsRouter extends Jooby {
             return new OutputMsg(JOIN, null, player, null, gameState);
         }
 
-        public static OutputMsg ofMove(GameState gameState, Hexagon.Move move) {
+        public static OutputMsg ofMove(GameState gameState, Move move) {
             return new OutputMsg(MOVE, null, null, move, gameState);
         }
     }

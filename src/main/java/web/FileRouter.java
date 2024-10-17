@@ -2,6 +2,7 @@ package web;
 
 import io.jooby.Jooby;
 import io.jooby.exception.NotFoundException;
+import web.State;
 
 public class FileRouter extends Jooby {
     public FileRouter(State state) {
@@ -9,7 +10,7 @@ public class FileRouter extends Jooby {
 
         assets("/css/index.css", "/css/index.css");
 
-        assets("/scripts/chess.js", "/scripts/chess.js");
+        assets("/scripts/index.js", "/scripts/index.js");
 
         get("/files/flags/{name}", ctx -> {
             var name = ctx.path("name").toOptional().orElse("");

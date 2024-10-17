@@ -1,6 +1,5 @@
 package domain;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static domain.Hexagon.PieceMoves;
 
 @Data
 @NoArgsConstructor(force = true)

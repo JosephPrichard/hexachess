@@ -22,6 +22,7 @@ public class Templates {
     Template errorTemplate;
 
     Template historyListTemplate;
+    Template searchOptionsTemplate;
 
     public Templates(Handlebars handlebars) throws IOException {
         // pages
@@ -37,5 +38,6 @@ public class Templates {
 
         // partials
         historyListTemplate = handlebars.compile("partials/historyList");
+        searchOptionsTemplate = handlebars.compile("partials/searchOptions");
     }
 }

@@ -2,19 +2,11 @@ package web;
 
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import io.jooby.Jooby;
-import models.ErrorView;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import redis.clients.jedis.JedisPooled;
 import utils.Config;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 import static utils.Log.LOGGER;
 
@@ -45,12 +37,20 @@ public class Router extends Jooby {
         }
     }
 
+    @Data
+    @AllArgsConstructor
+    public static class ErrorView {
+        int code;
+        String message;
+    }
+
     public Router(State state) {
         error((ctx, cause, statusCode) -> {
             var template = state.getTemplates().getErrorTemplate();
             try {
                 LOGGER.error(cause.toString());
-                ctx.send(template.apply(new ErrorView(statusCode.value(), "Unexpected error has occurred. Contact website administrator.")));
+                ctx.setResponseCode(statusCode);
+                ctx.send(template.apply(new Router.ErrorView(statusCode.value(), "Unexpected error has occurred. Contact website administrator.")));
             } catch (Exception e) {
                 ctx.send("Unexpected error occurred while handling another error! Contact website administrator.");
             }

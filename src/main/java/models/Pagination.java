@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class PaginationView {
+public class Pagination {
     String baseUrl;
     List<Integer> pages;
     @Nullable
@@ -17,18 +17,18 @@ public class PaginationView {
     @Nullable
     String rightPage;
 
-    public static PaginationView withTotal(String baseUrl, int page, int totalPages) {
+    public static Pagination withTotal(String baseUrl, int page, int totalPages) {
         List<Integer> pages = new ArrayList<>();
         for (int i = Math.max(page - 2, 1); i <= Math.min(page + 2, totalPages); i++) {
             pages.add(i);
         }
-        return new PaginationView(baseUrl, pages,
+        return new Pagination(baseUrl, pages,
             page > 1 ? Integer.toString(page - 1) : null,
             page < totalPages? Integer.toString(page + 1) : null);
     }
 
-    public static PaginationView ofUnlimited(String baseUrl, int page) {
-        return new PaginationView(baseUrl,
+    public static Pagination ofUnlimited(String baseUrl, int page) {
+        return new Pagination(baseUrl,
             List.of(page),
             page > 1 ? Integer.toString(page - 1) : null,
             Integer.toString(page + 1));

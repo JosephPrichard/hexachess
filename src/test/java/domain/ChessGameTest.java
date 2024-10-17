@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static domain.ChessBoard.*;
-import static domain.Hexagon.PieceMoves;
 import static utils.Log.LOGGER;
 
 public class ChessGameTest {

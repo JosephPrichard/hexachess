@@ -1,10 +1,8 @@
 package router;
 
 import com.github.jknack.handlebars.Template;
-import io.jooby.test.MockContext;
 import io.jooby.test.MockRouter;
 import models.UserEntity;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import services.*;
 import web.PageRouter;

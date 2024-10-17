@@ -12,10 +12,8 @@
         </div>
         <div class="wrapper">
             <form class="form-wrapper">
-                <label for="username">Username</label>
-                <br>
-                <input id="username" name="username" value="{{searchText}}"/>
-                <input class="button-grey button-submit" type="submit" value="Submit">
+                <input id="username" name="username" placeholder="Username" value="{{searchText}}"/>
+                <input class="button-grey button-submit-vertical-form" type="submit" value="Search">
             </form>
             {{#if searchText}}
                 {{> partials/statsTable }}

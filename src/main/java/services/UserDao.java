@@ -29,6 +29,7 @@ public class UserDao {
     private static final ResultSetHandler<AccountCreds> CREDS_MAPPER = new BeanHandler<>(AccountCreds.class);
     private static final ResultSetHandler<UserEntity> USER_MAPPER = new BeanHandler<>(UserEntity.class);
     private static final ResultSetHandler<List<UserEntity>> USER_LIST_MAPPER = new BeanListHandler<>(UserEntity.class);
+    private static final ResultSetHandler<List<UserTuple>> USER_TUPLE_LIST_MAPPER = new BeanListHandler<>(UserTuple.class);
     private static final ResultSetHandler<Integer> INT_MAPPER = new ScalarHandler<>();
 
     private final QueryRunner runner;
@@ -248,6 +249,28 @@ public class UserDao {
                 results.get(i).setRank(i + 1);
             }
             return results;
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserTuple {
+        String id;
+        String username;
+    }
+
+    public List<UserTuple> quickSearchByName(String name) {
+        var sql = """
+            SELECT id, username, (username <-> ?) as rank
+            FROM users
+            WHERE 1 = 1 AND username % ?
+            ORDER BY rank DESC LIMIT 10""";
+
+        try {
+            return runner.query(sql, USER_TUPLE_LIST_MAPPER, name, name);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }

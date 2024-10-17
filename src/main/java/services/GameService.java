@@ -1,6 +1,6 @@
 package services;
 
-import domain.Hexagon;
+import domain.Move;
 import lombok.AllArgsConstructor;
 import models.GameState;
 import models.HistoryEntity;
@@ -75,7 +75,7 @@ public class GameService {
         return remoteDict.setGame(gameId, state);
     }
 
-    public GameState makeMove(String gameId, Player player, Hexagon.Move move) {
+    public GameState makeMove(String gameId, Player player, Move move) {
         var state = remoteDict.getGame(gameId);
         if (state == null) {
             return null;
@@ -145,7 +145,7 @@ public class GameService {
         return remoteDict.setGame(gameId, state); // did black forfeit? then white won.
     }
 
-    public RemoteDict.GetGameKeysResult getManyKeys(Double cursor) {
-        return remoteDict.getGameKeys(cursor, 20);
+    public RemoteDict.GetGamesResult getGames(Double cursor) {
+        return remoteDict.getGames(cursor, 20);
     }
 }
