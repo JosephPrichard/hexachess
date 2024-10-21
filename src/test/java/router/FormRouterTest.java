@@ -1,5 +1,6 @@
 package router;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.jooby.Cookie;
 import io.jooby.Formdata;
 import io.jooby.test.MockContext;
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import services.GameService;
 import services.UserDao;
 import services.RemoteDict;
-import services.SessionService;
+import web.SessionService;
 import web.FormRouter;
 import web.State;
 
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.*;
 
 public class FormRouterTest {
     @Test
-    public void testPostSignup() throws SQLException, NoSuchAlgorithmException {
+    public void testPostSignup() throws JsonProcessingException {
         // given
         var accountInst = new UserDao.UserInst("1", "testUser", "testPassword", "USA", 1000, 3, 3);
         var player = new Player("1", "testUser");
@@ -37,7 +38,7 @@ public class FormRouterTest {
 
         when(mockAccountDao.insert("testUser", "testPassword")).thenReturn(accountInst);
         when(mockSessionService.createId()).thenReturn("sessionToken");
-        when(mockSessionService.createCookie("sessionToken")).thenReturn(cookie);
+        when(mockSessionService.createCookie("sessionToken", player)).thenReturn(cookie);
 
         var state = new State();
         state.setUserDao(mockAccountDao);
@@ -52,24 +53,24 @@ public class FormRouterTest {
         var mockForm = Formdata.create(mockContext);
         mockForm.put("username", "testUser");
         mockForm.put("password", "testPassword");
+        mockForm.put("duplicate-password", "testPassword");
         mockContext.setForm(mockForm);
 
         // when
         AtomicReference<MockResponse> response = new AtomicReference<>();
-        var result = mockRouter.post("/forms/signup", mockContext, response::set);
+        mockRouter.post("/forms/signup", mockContext, response::set);
         var actualCookie = response.get().getHeaders().get("Set-Cookie");
 
         // then
         verify(mockAccountDao, times(1)).insert("testUser", "testPassword");
         verify(mockDict, times(1)).setSession(anyString(), eq(player), anyLong());
-        verify(mockSessionService, times(1)).createCookie("sessionToken");
+        verify(mockSessionService, times(1)).createCookie("sessionToken", player);
 
-        Assertions.assertEquals("sessionToken", result.value(String.class));
         Assertions.assertEquals(actualCookie, cookie.toString());
     }
 
     @Test
-    public void testPostLogin() throws SQLException {
+    public void testPostLogin() throws JsonProcessingException {
         // given
         var player = new Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
@@ -79,7 +80,7 @@ public class FormRouterTest {
 
         when(mockAccountDao.verify("testUser", "testPass")).thenReturn(new Player("1", "username"));
         when(mockSessionService.createId()).thenReturn("sessionToken");
-        when(mockSessionService.createCookie("sessionToken")).thenReturn(cookie);
+        when(mockSessionService.createCookie("sessionToken", player)).thenReturn(cookie);
 
         var state = new State();
         state.setUserDao(mockAccountDao);
@@ -98,15 +99,14 @@ public class FormRouterTest {
 
         // when
         AtomicReference<MockResponse> response = new AtomicReference<>();
-        var result = mockRouter.post("/forms/login", mockContext, response::set);
+        mockRouter.post("/forms/login", mockContext, response::set);
         var actualCookie = response.get().getHeaders().get("Set-Cookie");
 
         // then
         verify(mockAccountDao, times(1)).verify("testUser", "testPass");
         verify(mockDict, times(1)).setSession(anyString(), eq(player), anyLong());
-        verify(mockSessionService, times(1)).createCookie("sessionToken");
+        verify(mockSessionService, times(1)).createCookie("sessionToken", player);
 
-        Assertions.assertEquals("sessionToken", result.value(String.class));
         Assertions.assertEquals(actualCookie, cookie.toString());
     }
 

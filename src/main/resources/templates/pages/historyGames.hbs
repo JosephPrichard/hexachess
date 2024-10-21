@@ -3,26 +3,22 @@
 <head>
     <title>Home - Hexachess</title>
     <link rel="stylesheet" href="/css/index.css">
-    <script>
-        function preview() {
-
-        }
-    </script>
 </head>
 <body>
 {{> partials/banner }}
 <div class="center-horizontal-container">
     <div class="wrapper">
-        <form class="form-wrapper">
-            <div class="input-wrapper">
-                <input id="white-name" name="whitename" class="form-input" placeholder="White Player" oninput=""/>
+        <div class="form-wrapper">
+            <div>
+                <input id="white-name-input" style="width: 40%; margin-bottom: 20px"/>
+                <div id="white-name-list"></div>
             </div>
-            <div class="input-wrapper">
-                <input id="black-name" name="blackname" class="form-input" placeholder="Black Player" oninput=""/>
+            <div>
+                <input id="black-name-input" style="width: 40%; margin-bottom: 20px"/>
+                <div id="black-name-list"></div>
             </div>
-            <br>
             <input class="button-grey" type="submit" value="Search">
-        </form>
+        </div>
         <table id="history-table" class="table-container" style="margin-bottom: 50px;">
             <thead>
             <tr>
@@ -33,7 +29,7 @@
             </tr>
             </thead>
             <tbody id="history-table-tbody">
-                {{> partials/historyList historyList }}
+                {{> partials/historyList this }}
             </tbody>
         </table>
     </div>

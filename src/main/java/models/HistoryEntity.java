@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.jsoup.Jsoup;
 import utils.Constants;
+import utils.Html;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -82,5 +84,12 @@ public class HistoryEntity {
 
     public String getFormattedPlayedOn() {
         return playedOn.toLocalDateTime().format(DATE_FORMATTER);
+    }
+
+    public void sanitize() {
+        whiteName = Jsoup.clean(whiteName, Html.SAFELIST);
+        blackName = Jsoup.clean(blackName, Html.SAFELIST);
+        whiteCountry = Jsoup.clean(whiteCountry, Html.SAFELIST);
+        blackCountry = Jsoup.clean(blackCountry, Html.SAFELIST);
     }
 }

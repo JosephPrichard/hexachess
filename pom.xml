@@ -42,6 +42,11 @@
             <artifactId>handlebars</artifactId>
             <version>4.4.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.1</version>
+        </dependency>
         <!-- Database -->
         <dependency>
             <groupId>com.zaxxer</groupId>

@@ -142,6 +142,11 @@ public class RemoteDict {
         }
     }
 
+    public void deleteSession(String sessionId) {
+        var fullId = "session:" + sessionId;
+        jedis.del(fullId);
+    }
+
     public Player getSessionOrDefault(String sessionId) {
         Player player;
         if (sessionId != null) {

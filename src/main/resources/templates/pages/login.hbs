@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Login - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <script>
+        async function postLogin(username, password) {
+            const formData = new FormData();
+            formData.append("username", username);
+            formData.append("password", password);
+
+            const url =`/forms/login`;
+            try {
+                const resp = await fetch(url, { method: 'POST', body: formData });
+                return [await resp.json(), resp];
+            } catch (ex) {
+                console.log(ex);
+            }
+        }
+
+        function onLogin() {
+            const usernameElem = document.getElementById("username-login");
+            const passwordElem = document.getElementById("password-login");
+
+            postLogin(usernameElem.value, passwordElem.value)
+                .then(([object, resp]) => {
+                    console.log("Login response", object, resp);
+
+                    const messageElem = document.getElementById("login-form-message");
+                    messageElem.innerText = object.message;
+
+                    if (resp.ok) {
+                        window.location = "/";
+                        messageElem.className = "green-color";
+                    } else {
+                        messageElem.className = "red-color";
+                    }
+                });
+
+            // used to prevent the form onsubmit event this is invoked within from refreshing the page
+            return false;
+        }
+    </script>
+</head>
+<body>
+{{> partials/banner }}
+<div class="center-horizontal-container">
+    <div class="title-lg">
+        Login
+    </div>
+    <div style="width: 500px">
+        <form id="login-form" class="form-wrapper" onsubmit="return onLogin();">
+            <label for="username-login" style="font-size: 17px">Username</label>
+            <input id="username-login" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+            <label for="password-login" style="font-size: 17px">Password</label>
+            <input id="password-login" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+            <input id="login-form-submit" class="button-grey" type="submit" value="Login"/>
+            <div style="margin-top: 20px;">
+                Don't have an account? Register <a href="/register" style="color: cornflowerblue;"> here! </a>
+            </div>
+            <div id="login-form-message" style="margin-top: 20px"></div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -4,7 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import utils.Constants;
+import utils.Html;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -70,5 +73,10 @@ public class UserEntity {
     public void roundElo() {
         elo = Math.round(elo);
         highestElo = Math.round(highestElo);
+    }
+
+    public void sanitize() {
+        username = Jsoup.clean(username, Html.SAFELIST);
+        country = Jsoup.clean(country, Html.SAFELIST);
     }
 }

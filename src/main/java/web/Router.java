@@ -3,6 +3,7 @@ package web;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import io.jooby.Jooby;
+import io.jooby.jackson.JacksonModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import redis.clients.jedis.JedisPooled;
@@ -46,15 +47,16 @@ public class Router extends Jooby {
 
     public Router(State state) {
         error((ctx, cause, statusCode) -> {
-            var template = state.getTemplates().getErrorTemplate();
-            try {
-                LOGGER.error(cause.toString());
-                ctx.setResponseCode(statusCode);
-                ctx.send(template.apply(new Router.ErrorView(statusCode.value(), "Unexpected error has occurred. Contact website administrator.")));
-            } catch (Exception e) {
-                ctx.send("Unexpected error occurred while handling another error! Contact website administrator.");
+            LOGGER.error(cause.toString());
+            ctx.setResponseCode(statusCode);
+            if (statusCode.value() == 500) {
+                ctx.send("");
+            } else {
+                ctx.send(cause.getMessage());
             }
         });
+
+        install(new JacksonModule());
 
         mount(new FileRouter(state));
         mount(new PageRouter(state));

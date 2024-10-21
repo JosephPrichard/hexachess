@@ -40,4 +40,12 @@ public class Templates {
         historyListTemplate = handlebars.compile("partials/historyList");
         searchOptionsTemplate = handlebars.compile("partials/searchOptions");
     }
+
+    public static String applyQuietly(Template template) {
+        try {
+            return template.apply(null);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 }

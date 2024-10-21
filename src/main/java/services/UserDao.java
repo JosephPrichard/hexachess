@@ -13,6 +13,8 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 import javax.sql.DataSource;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +54,9 @@ public class UserDao {
 
     public UserInst insert(String username, String password) {
         var inst = new UserInst(UUID.randomUUID().toString(), username, password, "USA", 1000f, 0, 0);
-        insert(inst);
+        if (!insert(inst)) {
+            return null;
+        }
         return inst;
     }
 
@@ -66,7 +70,7 @@ public class UserDao {
         }
     }
 
-    public void insert(UserInst inst) {
+    public boolean insert(UserInst inst) {
         var salt = generateSalt();
         var saltedPassword = inst.getPassword() + salt;
         var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
@@ -82,7 +86,11 @@ public class UserDao {
             runner.execute(sql, inst.getNewId(), inst.getUsername(), inst.getCountry(),
                 inst.getElo(), inst.getElo(), inst.getWins(), inst.getLosses(),
                 hashedPassword, salt);
+            return true;
         } catch (SQLException ex) {
+            if (Objects.equals(ex.getSQLState(), "23505")) {
+                return false;
+            }
             throw new RuntimeException(ex);
         }
     }
@@ -98,7 +106,7 @@ public class UserDao {
     }
 
     public Player verify(String username, String inputPassword) {
-        var sql = "SELECT id, username, password, salt FROM users WHERE username = ?";
+        var sql = "SELECT id, username, password, salt FROM users WHERE UPPER(username) = UPPER(?)";
         try {
             var accountCreds = runner.query(sql, CREDS_MAPPER, username);
             if (accountCreds == null) {

@@ -8,13 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import models.HistoryEntity;
 import models.Pagination;
+import models.RankedUser;
 import models.UserEntity;
 import utils.Threading;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import static utils.Log.LOGGER;
 
 public class PageRouter extends Jooby {
 
@@ -38,14 +37,6 @@ public class PageRouter extends Jooby {
         String searchText;
         List<UserEntity> userList;
         Pagination pages;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class GameView {
-        String whiteName;
-        String blackName;
-        List<HistoryEntity> historyList;
     }
 
     public PageRouter(State state) {
@@ -74,10 +65,9 @@ public class PageRouter extends Jooby {
         });
 
         Route.Handler indexHandler = (ctx) -> {
-            var gamesResult = gameService.getGames(null);
-
+//            var gamesResult = gameService.getGames(null);
             var template = templates.getIndexTemplate();
-            return template.apply(gamesResult);
+            return template.apply(null);
         };
 
         get("/", indexHandler);
@@ -86,23 +76,25 @@ public class PageRouter extends Jooby {
 
         get("/play", indexHandler);
 
+        var loginPage = Templates.applyQuietly(templates.getLoginTemplate());
+        get("/login", ctx -> loginPage);
+
+        var registerPage = Templates.applyQuietly(templates.getRegisterTemplate());
+        get("/register", ctx -> registerPage);
+
         get("/leaderboard", ctx -> {
             try {
                 int page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
 
-                var entityList = CompletableFuture.supplyAsync(() -> userDao.getLeaderboard(page, 25), Threading.EXECUTOR);
-                var totalPages = CompletableFuture.supplyAsync(() -> userDao.countPages(25), Threading.EXECUTOR);
+                var entityListFut = CompletableFuture.supplyAsync(() -> userDao.getLeaderboard(page, 25), Threading.EXECUTOR);
+                var totalPagesFut = CompletableFuture.supplyAsync(() -> userDao.countPages(25), Threading.EXECUTOR);
+                var entityList = entityListFut.get();
+                var totalPages = totalPagesFut.get();
 
-//                var leaderboard = remoteDict.getLeaderboardPage(page, 20);
-//                var entityList = userDao.getByRanks(leaderboard.getUsers());
-//                RankedUser.joinRanks(leaderboard.getUsers(), entityList);
+                entityList.forEach(UserEntity::sanitize);
 
                 var template = templates.getLeaderboardTemplate();
-
-                return template.apply(new LeaderboardView(entityList.get(),
-                    Pagination.withTotal("?", page, totalPages.get())));
-//                return template.apply(new LeaderboardView(entityList,
-//                    PaginationView.withTotal("?", page, leaderboard.getPageCount())));
+                return template.apply(new LeaderboardView(entityList, Pagination.withTotal("?", page, totalPages)));
             } catch (NumberFormatException ex) {
                 var code = StatusCode.BAD_REQUEST_CODE;
                 ctx.setResponseCode(code);
@@ -110,6 +102,73 @@ public class PageRouter extends Jooby {
                 return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
+
+//        get("/leaderboard", ctx -> {
+//            try {
+//                int page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
+//
+//                var leaderboard = remoteDict.getLeaderboardPage(page, 20);
+//                var entityList = userDao.getByRanks(leaderboard.getUsers());
+//
+//                RankedUser.joinRanks(leaderboard.getUsers(), entityList);
+//                entityList.forEach(UserEntity::sanitize);
+//
+//                var template = templates.getLeaderboardTemplate();
+//                return template.apply(new LeaderboardView(entityList, Pagination.withTotal("?", page, leaderboard.getPageCount())));
+//            } catch (NumberFormatException ex) {
+//                var code = StatusCode.BAD_REQUEST_CODE;
+//                ctx.setResponseCode(code);
+//                var template = templates.getErrorTemplate();
+//                return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
+//            }
+//        });
+
+        get("/players/{id}", ctx -> {
+            var userIdSlug = ctx.path("id");
+            if (userIdSlug.isMissing()) {
+                var code = StatusCode.BAD_REQUEST_CODE;
+                ctx.setResponseCode(code);
+                var template = templates.getErrorTemplate();
+                return template.apply(new Router.ErrorView(code, "Invalid param 'id': must contain id within slug."));
+            }
+            var userId = userIdSlug.toString();
+
+            var userEntityFut = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
+            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 10), Threading.EXECUTOR);
+            var userEntity = userEntityFut.get();
+            var historyList = historyListFut.get();
+
+            userEntity.sanitize();
+            historyList.forEach(HistoryEntity::sanitize);
+
+            var template = templates.getProfileTemplate();
+            return template.apply(new ProfileView(userEntity, historyList));
+        });
+
+//        get("/players/{id}", ctx -> {
+//            var userIdSlug = ctx.path("id");
+//            if (userIdSlug.isMissing()) {
+//                var code = StatusCode.BAD_REQUEST_CODE;
+//                ctx.setResponseCode(code);
+//                var template = templates.getErrorTemplate();
+//                return template.apply(new Router.ErrorView(code, "Invalid param 'id': must contain id within slug."));
+//            }
+//            var userId = userIdSlug.toString();
+//
+//            var userEntityFut = CompletableFuture.supplyAsync(() -> userDao.getById(userId), Threading.EXECUTOR);
+//            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 10), Threading.EXECUTOR);
+//
+//            var userEntity = userEntityFut.get();
+//            var rank = remoteDict.getLeaderboardRank(userEntity.getId());
+//            userEntity.setRank(rank);
+//            var historyList = historyListFut.get();
+//
+//            userEntity.sanitize();
+//            historyList.forEach(HistoryEntity::sanitize);
+//
+//            var template = templates.getProfileTemplate();
+//            return template.apply(new ProfileView(userEntity, historyList));
+//        });
 
         get("/players/search", ctx -> {
             try {
@@ -122,9 +181,10 @@ public class PageRouter extends Jooby {
                 }
 
                 var entityList = userDao.searchByName(name, page, 20);
+                entityList.forEach(UserEntity::sanitize);
 
-                return template.apply(new SearchView(name, entityList,
-                    Pagination.ofUnlimited(String.format("?username=%s&", name), page)));
+                var pagination = Pagination.ofUnlimited(String.format("?username=%s&", name), page);
+                return template.apply(new SearchView(name, entityList, pagination));
             } catch (NumberFormatException ex) {
                 var code = StatusCode.BAD_REQUEST_CODE;
                 ctx.setResponseCode(code);
@@ -133,45 +193,12 @@ public class PageRouter extends Jooby {
             }
         });
 
-        get("/players/{id}", ctx -> {
-            var userIdSlug = ctx.path("id");
-            if (userIdSlug.isMissing()) {
-                var code = StatusCode.BAD_REQUEST_CODE;
-                ctx.setResponseCode(code);
-                var template = templates.getErrorTemplate();
-                return template.apply(new Router.ErrorView(code, "Invalid param 'id': must contain id within slug."));
-            }
-            var userId = userIdSlug.toString();
-
-            var userEntity = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
-            var historyList = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 10), Threading.EXECUTOR);
-
-//            var userEntity = userDao.getById(userId);
-//            var rank = remoteDict.getLeaderboardRank(entity.getId());
-//            userEntity.setRank(rank);
-
-            var template = templates.getProfileTemplate();
-            return template.apply(new ProfileView(userEntity.get(), historyList.get()));
-        });
-
         get("/games", ctx -> {
-            var whiteId = ctx.query("whiteId").toOptional().orElse(null);
-            var blackId = ctx.query("blackId").toOptional().orElse(null);
-            var historyList = historyDao.getHistories(whiteId, blackId, null, 20);
+            var historyList = historyDao.getHistories(null, null, null, 20);
+            historyList.forEach(HistoryEntity::sanitize);
 
             var template = templates.getGameHistoryTemplate();
-            return template.apply(new GameView(whiteId, blackId, historyList));
-        });
-
-        get("/profile", ctx -> {
-            var cookie = ctx.header("Cookie");
-            if (cookie.isMissing()) {
-                return ctx.sendRedirect("/login");
-            } else {
-                var sessionId = cookie.toString();
-                var player = remoteDict.getSession(sessionId);
-                return ctx.sendRedirect("/players/" + player.getId());
-            }
+            return template.apply(historyList);
         });
     }
 }

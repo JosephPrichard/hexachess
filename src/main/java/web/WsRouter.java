@@ -24,7 +24,7 @@ public class WsRouter extends Jooby {
     public WsRouter(State state) {
         var jsonMapper = state.getJsonMapper();
         var broadcastService = state.getBroadcaster();
-        var dictionary = state.getRemoteDict();
+        var remoteDict = state.getRemoteDict();
 
         ws("/games/join/{id}", (ctx, configurer) -> {
             var sessionId = ctx.query("sessionId").valueOrNull(); // query is safe for secrets over a websocket when using wss
@@ -34,7 +34,7 @@ public class WsRouter extends Jooby {
             }
 
             var gameId = gameIdSlug.toString();
-            var player = dictionary.getSessionOrDefault(sessionId);
+            var player = remoteDict.getSessionOrDefault(sessionId);
 
             if (player == null) {
                 throw new RuntimeException("Expected player to be non null");

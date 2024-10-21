@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Leaderboard - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <script>
+        async function postLogin(username, password, dupPassword) {
+            const formData = new FormData();
+            formData.append("username", username);
+            formData.append("password", password);
+            formData.append("duplicate-password", dupPassword);
+
+            const url =`/forms/signup`;
+            try {
+                const resp = await fetch(url, { method: 'POST', body: formData });
+                return [await resp.json(), resp];
+            } catch (ex) {
+                console.log(ex);
+            }
+        }
+
+        function onSignUp() {
+            const usernameElem = document.getElementById("username-register");
+            const passwordElem = document.getElementById("password-register");
+            const dupPasswordElem = document.getElementById("password-retype-register");
+
+            postLogin(usernameElem.value, passwordElem.value, dupPasswordElem.value)
+                .then(([object, resp]) => {
+                    console.log("Register response", object, resp);
+
+                    const messageElem = document.getElementById("register-form-message");
+                    messageElem.innerText = object.message;
+
+                    if (resp.ok) {
+                        window.location = "/";
+                        messageElem.className = "green-color";
+                    } else {
+                        messageElem.className = "red-color";
+                    }
+                });
+
+            // used to prevent the form onsubmit event this is invoked within from refreshing the page
+            return false;
+        }
+    </script>
+</head>
+<body>
+{{> partials/banner }}
+<div class="center-horizontal-container">
+    <div class="title-lg">
+        Register
+    </div>
+    <div style="width: 500px">
+        <form id="register-form" class="form-wrapper" onsubmit="return onSignUp()">
+            <label for="username-register" style="font-size: 17px">Username</label>
+            <input id="username-register" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+            <label for="password-register" style="font-size: 17px">Password</label>
+            <input id="password-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+            <label for="password-retype-register" style="font-size: 17px">Confirm Password</label>
+            <input id="password-retype-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+            <input class="button-grey" type="submit" value="Register" />
+            <div id="register-form-message" style="margin-top: 20px"></div>
+        </form>
+    </div>
+</div>
+</body>

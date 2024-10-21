@@ -36,7 +36,7 @@ public class State {
         historyDao = new HistoryDao(ds);
         remoteDict = new RemoteDict(jedis, jsonMapper);
         gameService = new GameService(remoteDict, userDao, historyDao);
-        sessionService = new SessionService();
+        sessionService = new SessionService(jsonMapper);
         broadcaster = new GlobalBroadcaster(jedis);
         templates = new Templates(handlebars);
         files = filesMap;

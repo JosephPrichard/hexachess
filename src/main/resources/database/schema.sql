@@ -14,7 +14,8 @@ CREATE TABLE users (
     joinedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     password VARCHAR NOT NULL,
     salt VARCHAR NOT NULL,
-    PRIMARY KEY (id));
+    PRIMARY KEY (id),
+    CONSTRAINT unique_username UNIQUE (username));
 
 CREATE TABLE users_metadata (
     id NUMERIC,
