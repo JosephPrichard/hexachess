@@ -192,13 +192,5 @@ public class PageRouter extends Jooby {
                 return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
-
-        get("/games", ctx -> {
-            var historyList = historyDao.getHistories(null, null, null, 20);
-            historyList.forEach(HistoryEntity::sanitize);
-
-            var template = templates.getGameHistoryTemplate();
-            return template.apply(historyList);
-        });
     }
 }

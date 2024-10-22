@@ -40,19 +40,5 @@ public class PartialsRouter extends Jooby {
             var template = templates.getHistoryListTemplate();
             return template.apply(historyList);
         });
-
-        get("/partials/player-options", ctx -> {
-            var nameIdSlug = ctx.query("name");
-            if (nameIdSlug.isMissing()) {
-                ctx.setResponseCode(400);
-                return "";
-            }
-            var name = nameIdSlug.toString();
-
-            var userList = userDao.quickSearchByName(name);
-
-            var template = templates.getSearchOptionsTemplate();
-            return template.apply(userList);
-        });
     }
 }

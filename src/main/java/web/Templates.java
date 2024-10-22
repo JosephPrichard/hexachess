@@ -32,13 +32,11 @@ public class Templates {
         leaderboardTemplate = handlebars.compile("/pages/leaderboard");
         profileTemplate = handlebars.compile("/pages/profile");
         currentGamesTemplate = handlebars.compile("/pages/currentGames");
-        gameHistoryTemplate = handlebars.compile("/pages/historyGames");
         searchTemplate = handlebars.compile("/pages/searchPlayers");
         errorTemplate = handlebars.compile("/pages/error");
 
         // partials
         historyListTemplate = handlebars.compile("partials/historyList");
-        searchOptionsTemplate = handlebars.compile("partials/searchOptions");
     }
 
     public static String applyQuietly(Template template) {

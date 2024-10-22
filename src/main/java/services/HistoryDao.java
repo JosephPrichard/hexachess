@@ -54,69 +54,26 @@ public class HistoryDao {
         }
     }
 
-//    public HistoryEntity getHistory(long id) {
-//        var sql = """
-//            SELECT
-//                h.id,
-//                h.whiteId,
-//                h.blackId,
-//                u1.username as whiteName,
-//                u2.username as blackName,
-//                u1.country as whiteCountry,
-//                u2.country as blackCountry,
-//                h.result,
-//                h.playedOn,
-//                h.winElo,
-//                h.loseElo
-//            FROM histories as h
-//            INNER JOIN users as u1 ON u1.id = h.whiteId
-//            INNER JOIN users as u2 ON u2.id = h.blackId
-//            WHERE h.id = ?""";
-//        try {
-//            return runner.query(sql, HIST_MAPPER, id);
-//        } catch (SQLException ex) {
-//            throw new RuntimeException(ex);
-//        }
-//    }
-
-    public List<HistoryEntity> getHistories(String whiteId, String blackId, Long afterId, int perPage) {
+    public HistoryEntity getHistory(long id) {
         var sql = """
             SELECT
-                h1.id,
-                h1.whiteId,
-                h1.blackId,
+                h.id,
+                h.whiteId,
+                h.blackId,
                 u1.username as whiteName,
                 u2.username as blackName,
                 u1.country as whiteCountry,
                 u2.country as blackCountry,
-                h1.result,
-                h1.playedOn,
-                h1.winElo,
-                h1.loseElo
-            FROM histories as h1
-            INNER JOIN users as u1 ON u1.id = h1.whiteId
-            INNER JOIN users as u2 ON u2.id = h1.blackId
-            WHERE 1 = 1""";
-        List<Object> params = new ArrayList<>();
-
-        if (whiteId != null) {
-            sql += " AND h1.whiteId = ? ";
-            params.add(whiteId);
-        }
-        if (blackId != null) {
-            sql += " AND h1.blackId = ? ";
-            params.add(blackId);
-        }
-
-        if (afterId != null) {
-            sql += " AND h1.id < ?";
-            params.add(afterId);
-        }
-        sql += " ORDER BY h1.id DESC LIMIT ?";
-        params.add(perPage);
-
+                h.result,
+                h.playedOn,
+                h.winElo,
+                h.loseElo
+            FROM histories as h
+            INNER JOIN users as u1 ON u1.id = h.whiteId
+            INNER JOIN users as u2 ON u2.id = h.blackId
+            WHERE h.id = ?""";
         try {
-            return runner.query(sql, HIST_LIST_MAPPER, params.toArray());
+            return runner.query(sql, HIST_MAPPER, id);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }

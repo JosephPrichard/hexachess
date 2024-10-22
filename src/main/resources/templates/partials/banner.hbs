@@ -5,9 +5,6 @@
     <a href="/play" class="banner-elem color-hover">
         Play
     </a>
-    <a href="/games" class="banner-elem color-hover">
-        Games
-    </a>
     <a href="/leaderboard" class="banner-elem color-hover">
         Leaderboard
     </a>
@@ -22,7 +19,7 @@
 
     const profileElem = document.getElementById("profile");
     if (cookieValue) {
-        profileElem.innerHTML = `<div class="banner-elem color-hover"> ${cookieValue.username} </div>`;
+        profileElem.innerHTML = `<a href="/players/${cookieValue.playerId}" class="banner-elem color-hover"> ${cookieValue.username} </a>`;
     } else {
         profileElem.innerHTML = '<a href="/login" class="banner-elem color-hover"> Login </div>';
     }

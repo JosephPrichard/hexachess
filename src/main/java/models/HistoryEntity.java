@@ -47,21 +47,23 @@ public class HistoryEntity {
     }
 
     public String getWhiteEloDiff() {
-        return formatElo(switch (result) {
+        var elo = switch (result) {
             case WHITE_WIN -> winElo;
             case BLACK_WIN -> loseElo;
             case DRAW -> 0;
             default -> throw new IllegalStateException("Invalid result state " + result);
-        });
+        };
+        return formatElo(elo);
     }
 
     public String getBlackEloDiff() {
-        return formatElo(switch (result) {
+        var elo = switch (result) {
             case WHITE_WIN -> loseElo;
             case BLACK_WIN -> winElo;
             case DRAW -> 0;
             default -> throw new IllegalStateException("Invalid result state " + result);
-        });
+        };
+        return formatElo(elo);
     }
 
     public String getWhiteEloColor() {
