@@ -1,16 +1,16 @@
 <div class="pagination">
     {{#if leftPage}}
-        <a class="page-button" href="{{baseUrl}}page={{leftPage}}">
+        <a class="page-button" href="{{leftPage}}">
             &#11164;
         </a>
     {{/if}}
     {{#each pages as |page|}}
-        <a class="page-button" href="{{baseUrl}}page={{page}}">
-            {{page}}
+        <a class="page-button" href="{{page.location}}">
+            {{page.value}}
         </a>
     {{/each}}
     {{#if rightPage}}
-        <a class="page-button" href="{{baseUrl}}page={{rightPage}}">
+        <a class="page-button" href="{{rightPage}}">
             &#11166;
         </a>
     {{/if}}

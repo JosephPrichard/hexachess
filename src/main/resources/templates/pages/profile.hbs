@@ -10,7 +10,7 @@
                 const resp = await fetch(url, { method: 'GET' });
                 return [await resp.text(), resp];
             } catch (ex) {
-                console.log(ex);
+                console.error(ex);
             }
         }
 

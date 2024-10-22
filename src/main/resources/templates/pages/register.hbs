@@ -15,7 +15,7 @@
                 const resp = await fetch(url, { method: 'POST', body: formData });
                 return [await resp.json(), resp];
             } catch (ex) {
-                console.log(ex);
+                console.error(ex);
             }
         }
 
@@ -29,12 +29,13 @@
                     console.log("Register response", object, resp);
 
                     const messageElem = document.getElementById("register-form-message");
-                    messageElem.innerText = object.message;
 
                     if (resp.ok) {
+                        messageElem.innerText = "";
+                        messageElem.className = "";
                         window.location = "/";
-                        messageElem.className = "green-color";
                     } else {
+                        messageElem.innerText = object.message;
                         messageElem.className = "red-color";
                     }
                 });
