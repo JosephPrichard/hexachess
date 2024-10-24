@@ -7,15 +7,18 @@ import io.jooby.Cookie;
 import io.jooby.SameSite;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import models.Player;
 
 import java.security.SecureRandom;
+
+import static utils.Log.LOGGER;
 
 @AllArgsConstructor
 public class SessionService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    public static final String COOKIE_NAME = "sessionId";
+    public static final String COOKIE_NAME = "session";
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final ObjectMapper jsonMapper;
@@ -31,6 +34,7 @@ public class SessionService {
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class SessionValue {
         String sessionId;
@@ -39,15 +43,16 @@ public class SessionService {
     }
 
     public Cookie createCookie(String sessionId, Player player) throws JsonProcessingException {
-        return createCookie(new SessionService.SessionValue(sessionId, player.getId(), player.getName()));
+        return createCookie(sessionId, player.getId(), player.getName());
     }
 
-    public Cookie createCookie(SessionValue session) throws JsonProcessingException {
-        var sessionJson = jsonMapper.writeValueAsString(session);
-
+    public Cookie createCookie(String sessionId, String playerId, String username) {
+        var sessionCsv = String.format("%s,%s,%s", sessionId, playerId, username);
         var maxAgeSecs = 6 * 60 * 60; // 6 hours
+
         // our cookie is not set to http only because javascript must read it starting a websocket
-        return new Cookie(COOKIE_NAME, sessionJson)
+        return new Cookie(COOKIE_NAME, sessionCsv)
+            .setDomain("localhost")
             .setSecure(true)
             .setSameSite(SameSite.STRICT)
             .setMaxAge(maxAgeSecs);
@@ -55,16 +60,28 @@ public class SessionService {
 
     public Cookie createEmptyCookie() {
         return new Cookie(COOKIE_NAME, "")
+            .setDomain("localhost")
             .setSecure(true)
             .setSameSite(SameSite.STRICT)
             .setMaxAge(1);
     }
 
-    public SessionValue getSession(Context ctx) throws JsonProcessingException {
-        var cookie = ctx.cookie(COOKIE_NAME).valueOrNull();
-        if (cookie == null) {
+    public SessionValue getSession(String cookieStr) {
+        if (cookieStr == null) {
             return null;
         }
-        return jsonMapper.readValue(cookie, SessionValue.class);
+        var delimIndex = cookieStr.indexOf("=");
+        if (delimIndex < 0) {
+            return null;
+        }
+        var fields = cookieStr.substring(delimIndex + 1).split(",");
+        if (fields.length < 3) {
+            LOGGER.error("Session is in invalid format " + cookieStr);
+            return null;
+        }
+        return new SessionValue(
+            fields[0].substring(1),
+            fields[1],
+            fields[2].substring(0, fields[2].length() - 1));
     }
 }

@@ -3,7 +3,6 @@ package services;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import models.Player;
 import models.RankedUser;
 import models.UserEntity;
@@ -13,25 +12,18 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
 
 import javax.sql.DataSource;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class UserDao {
 
-    private static final ResultSetHandler<AccountCreds> CREDS_MAPPER = new BeanHandler<>(AccountCreds.class);
     private static final ResultSetHandler<UserEntity> USER_MAPPER = new BeanHandler<>(UserEntity.class);
     private static final ResultSetHandler<List<UserEntity>> USER_LIST_MAPPER = new BeanListHandler<>(UserEntity.class);
-    private static final ResultSetHandler<List<UserTuple>> USER_TUPLE_LIST_MAPPER = new BeanListHandler<>(UserTuple.class);
     private static final ResultSetHandler<Integer> INT_MAPPER = new ScalarHandler<>();
 
     private final QueryRunner runner;
@@ -52,11 +44,12 @@ public class UserDao {
         int losses;
     }
 
-    public UserInst insert(String username, String password) {
-        var inst = new UserInst(UUID.randomUUID().toString(), username, password, "USA", 1000f, 0, 0);
-        if (!insert(inst)) {
-            return null;
-        }
+    public static class TakenUsernameException extends RuntimeException {
+    }
+
+    public UserInst insert(String username, String password) throws TakenUsernameException {
+        var inst = new UserInst(UUID.randomUUID().toString(), username, password, "USA", UserEntity.START_ELO, 0, 0);
+        insert(inst);
         return inst;
     }
 
@@ -70,7 +63,7 @@ public class UserDao {
         }
     }
 
-    public boolean insert(UserInst inst) {
+    public void insert(UserInst inst) throws TakenUsernameException {
         var salt = generateSalt();
         var saltedPassword = inst.getPassword() + salt;
         var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
@@ -86,41 +79,50 @@ public class UserDao {
             runner.execute(sql, inst.getNewId(), inst.getUsername(), inst.getCountry(),
                 inst.getElo(), inst.getElo(), inst.getWins(), inst.getLosses(),
                 hashedPassword, salt);
-            return true;
         } catch (SQLException ex) {
             if (Objects.equals(ex.getSQLState(), "23505")) {
-                return false;
+                // this is a constraint exception, which in this case means unique key constraint
+                throw new TakenUsernameException();
             }
             throw new RuntimeException(ex);
         }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AccountCreds {
-        String id;
-        String username;
-        String password;
-        String salt;
     }
 
     public Player verify(String username, String inputPassword) {
         var sql = "SELECT id, username, password, salt FROM users WHERE UPPER(username) = UPPER(?)";
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
         try {
-            var accountCreds = runner.query(sql, CREDS_MAPPER, username);
-            if (accountCreds == null) {
+            conn = runner.getDataSource().getConnection();
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, username);
+
+            rs = stmt.executeQuery();
+
+            if (!rs.next()) {
                 return null;
             }
-            var saltedPassword = inputPassword + accountCreds.getSalt();
-            var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), accountCreds.getPassword());
-            return result.verified ? new Player(accountCreds.getId(), accountCreds.getUsername()) : null;
+            var salt = rs.getString("salt");
+            var password = rs.getString("password");
+            var id = rs.getString("id");
+            var usernameOut = rs.getString("username");
+
+            var saltedPassword = inputPassword + salt;
+            var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), password);
+            return result.verified ? new Player(id, usernameOut) : null;
         } catch (SQLException ex) {
+            DbUtils.rollbackAndCloseQuietly(conn);
             throw new RuntimeException(ex);
+        } finally {
+            DbUtils.closeQuietly(conn);
+            DbUtils.closeQuietly(stmt);
+            DbUtils.closeQuietly(rs);
         }
     }
 
-    public void updateAccount(String id, String username, String country) {
+    public void update(String id, String username, String country) {
         try {
             var sql = "BEGIN; UPDATE users SET username = ?, country = ? WHERE id = ?; END";
             runner.execute(sql, username, country, id);
@@ -129,15 +131,24 @@ public class UserDao {
         }
     }
 
+    public void updatePassword(String id, String password) {
+        try {
+            var sql = "BEGIN; UPDATE users SET password = ? WHERE id = ?; END";
+            runner.execute(sql, password, id);
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     @Data
     @AllArgsConstructor
     public static class EloChangeSet {
-        double winElo;
-        double loseElo;
+        double winEloDiff;
+        double loseEloDiff;
 
         public void roundElo() {
-            winElo = Math.round(winElo);
-            loseElo = Math.round(loseElo);
+            winEloDiff = Math.round(winEloDiff);
+            loseEloDiff = Math.round(loseEloDiff);
         }
     }
 
@@ -157,12 +168,12 @@ public class UserDao {
 
             stmt.execute();
 
-            double winElo = stmt.getBigDecimal(3).doubleValue();
-            double loseElo = stmt.getBigDecimal(4).doubleValue();
+            double winEloDiff = stmt.getBigDecimal(3).doubleValue();
+            double loseEloDiff = stmt.getBigDecimal(4).doubleValue();
 
-            return new EloChangeSet(winElo, loseElo);
+            return new EloChangeSet(winEloDiff, loseEloDiff);
         } catch (SQLException ex) {
-            DbUtils.commitAndCloseQuietly(conn);
+            DbUtils.rollbackAndCloseQuietly(conn);
             throw new RuntimeException(ex);
         } finally {
             DbUtils.closeQuietly(conn);
@@ -257,28 +268,6 @@ public class UserDao {
                 results.get(i).setRank(i + 1);
             }
             return results;
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class UserTuple {
-        String id;
-        String username;
-    }
-
-    public List<UserTuple> quickSearchByName(String name) {
-        var sql = """
-            SELECT id, username, (username <-> ?) as rank
-            FROM users
-            WHERE 1 = 1 AND username % ?
-            ORDER BY rank DESC LIMIT 10""";
-
-        try {
-            return runner.query(sql, USER_TUPLE_LIST_MAPPER, name, name);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }

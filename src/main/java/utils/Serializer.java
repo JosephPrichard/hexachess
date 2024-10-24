@@ -11,6 +11,7 @@ import models.GameState;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import static utils.Log.LOGGER;
 
@@ -55,5 +56,9 @@ public class Serializer {
             LOGGER.error("Error occurred while deserializing: " + ex);
             throw new RuntimeException(ex);
         }
+    }
+
+    public static <T> T deserialize(String str, Class<T> clazz) {
+        return deserialize(str.getBytes(StandardCharsets.UTF_8), clazz);
     }
 }

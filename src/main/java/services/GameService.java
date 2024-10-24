@@ -3,7 +3,7 @@ package services;
 import domain.Move;
 import lombok.AllArgsConstructor;
 import models.GameState;
-import models.HistoryEntity;
+import models.HistEntity;
 import models.Player;
 import utils.Serializer;
 import utils.Threading;
@@ -113,9 +113,9 @@ public class GameService {
 
     public void onFinishGame(GameState state, boolean isWhiteWin) {
         try {
-            var whiteId =  state.getWhitePlayer().getId();
+            var whiteId = state.getWhitePlayer().getId();
             var blackId = state.getBlackPlayer().getId();
-            var result = isWhiteWin ? HistoryEntity.WHITE_WIN : HistoryEntity.BLACK_WIN;
+            var result = isWhiteWin ? HistEntity.WHITE_WIN : HistEntity.BLACK_WIN;
             var winId = isWhiteWin ? whiteId : blackId;
             var loseId = isWhiteWin ? blackId : whiteId;
 
@@ -123,9 +123,9 @@ public class GameService {
 
             var changeSet = userDao.updateStatsUsingResult(winId, loseId);
             remoteDict.updateLeaderboardUser(
-                new RemoteDict.EloChangeSet(winId, changeSet.winElo),
-                new RemoteDict.EloChangeSet(loseId, changeSet.loseElo));
-            historyDao.insert(whiteId, blackId, result, moveHistoryData, changeSet.getWinElo(), changeSet.getLoseElo());
+                new RemoteDict.EloChangeSet(winId, changeSet.winEloDiff),
+                new RemoteDict.EloChangeSet(loseId, changeSet.loseEloDiff));
+            historyDao.insert(whiteId, blackId, result, moveHistoryData, changeSet.getWinEloDiff(), changeSet.getLoseEloDiff());
         } catch (Exception ex) {
             LOGGER.info("Failed to persist game results to database in background thread " + ex);
         }

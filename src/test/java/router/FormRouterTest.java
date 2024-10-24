@@ -27,21 +27,21 @@ import static org.mockito.Mockito.*;
 
 public class FormRouterTest {
     @Test
-    public void testPostSignup() throws JsonProcessingException {
+    public void testPostSignup() throws JsonProcessingException, UserDao.TakenUsernameException {
         // given
         var accountInst = new UserDao.UserInst("1", "testUser", "testPassword", "USA", 1000, 3, 3);
         var player = new Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
 
-        var mockAccountDao = mock(UserDao.class);
+        var mockUserDao = mock(UserDao.class);
         var mockSessionService = mock(SessionService.class);
 
-        when(mockAccountDao.insert("testUser", "testPassword")).thenReturn(accountInst);
+        when(mockUserDao.insert("testUser", "testPassword")).thenReturn(accountInst);
         when(mockSessionService.createId()).thenReturn("sessionToken");
         when(mockSessionService.createCookie("sessionToken", player)).thenReturn(cookie);
 
         var state = new State();
-        state.setUserDao(mockAccountDao);
+        state.setUserDao(mockUserDao);
         state.setSessionService(mockSessionService);
 
         var mockDict = mock(RemoteDict.class);
@@ -62,7 +62,7 @@ public class FormRouterTest {
         var actualCookie = response.get().getHeaders().get("Set-Cookie");
 
         // then
-        verify(mockAccountDao, times(1)).insert("testUser", "testPassword");
+        verify(mockUserDao, times(1)).insert("testUser", "testPassword");
         verify(mockDict, times(1)).setSession(anyString(), eq(player), anyLong());
         verify(mockSessionService, times(1)).createCookie("sessionToken", player);
 
@@ -75,15 +75,15 @@ public class FormRouterTest {
         var player = new Player("1", "testUser");
         var cookie = new Cookie("sessionToken");
 
-        var mockAccountDao = mock(UserDao.class);
+        var mockUserDao = mock(UserDao.class);
         var mockSessionService = mock(SessionService.class);
 
-        when(mockAccountDao.verify("testUser", "testPass")).thenReturn(new Player("1", "username"));
+        when(mockUserDao.verify("testUser", "testPass")).thenReturn(new Player("1", "username"));
         when(mockSessionService.createId()).thenReturn("sessionToken");
         when(mockSessionService.createCookie("sessionToken", player)).thenReturn(cookie);
 
         var state = new State();
-        state.setUserDao(mockAccountDao);
+        state.setUserDao(mockUserDao);
         state.setSessionService(mockSessionService);
 
         var mockDict = mock(RemoteDict.class);
@@ -103,7 +103,7 @@ public class FormRouterTest {
         var actualCookie = response.get().getHeaders().get("Set-Cookie");
 
         // then
-        verify(mockAccountDao, times(1)).verify("testUser", "testPass");
+        verify(mockUserDao, times(1)).verify("testUser", "testPass");
         verify(mockDict, times(1)).setSession(anyString(), eq(player), anyLong());
         verify(mockSessionService, times(1)).createCookie("sessionToken", player);
 

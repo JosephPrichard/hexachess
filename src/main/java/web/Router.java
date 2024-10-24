@@ -38,20 +38,16 @@ public class Router extends Jooby {
         }
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class ErrorView {
-        int code;
-        String message;
-    }
-
     public Router(State state) {
         error((ctx, cause, statusCode) -> {
-            LOGGER.error(cause.toString());
             ctx.setResponseCode(statusCode);
             if (statusCode.value() == 500) {
-                ctx.send("");
+                // internal server errors contain stack traces, so log them out to server but do not end to client
+                LOGGER.error("Internal Server Error 500: ", cause);
+                ctx.send("Internal Server Error");
             } else {
+                // non 500 errors contain clear messages that can be spit out as strings to both server logs and the client
+                LOGGER.error("Error " + statusCode + " " + cause);
                 ctx.send(cause.getMessage());
             }
         });

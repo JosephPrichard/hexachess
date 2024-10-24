@@ -13,9 +13,10 @@
             const url =`/forms/signup`;
             try {
                 const resp = await fetch(url, { method: 'POST', body: formData });
-                return [await resp.json(), resp];
+                return [await resp.json(), resp.ok];
             } catch (ex) {
                 console.error(ex);
+                return [{ message: "An unexpected error has occurred" }, false];
             }
         }
 
@@ -25,12 +26,12 @@
             const dupPasswordElem = document.getElementById("password-retype-register");
 
             postLogin(usernameElem.value, passwordElem.value, dupPasswordElem.value)
-                .then(([object, resp]) => {
-                    console.log("Register response", object, resp);
+                .then(([object, ok]) => {
+                    console.log("Register response", object, ok);
 
                     const messageElem = document.getElementById("register-form-message");
 
-                    if (resp.ok) {
+                    if (ok) {
                         messageElem.innerText = "";
                         messageElem.className = "";
                         window.location = "/";

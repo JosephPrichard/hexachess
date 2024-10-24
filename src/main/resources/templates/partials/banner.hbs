@@ -12,12 +12,15 @@
         Search
     </a>
     <div id="profile"></div>
+    <a href="/settings" class="banner-elem color-hover">
+        Settings
+    </a>
 </div>
 <script src="/scripts/session.js"></script>
 <script>
-    const cookieValue = getCookie();
-
     const profileElem = document.getElementById("profile");
+    const cookieValue = getSessionCookie();
+
     if (cookieValue) {
         profileElem.innerHTML = `<a href="/players/${cookieValue.playerId}" class="banner-elem color-hover"> ${cookieValue.username} </a>`;
     } else {

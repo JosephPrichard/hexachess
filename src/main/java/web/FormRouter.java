@@ -1,16 +1,19 @@
 package web;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
+import io.jooby.exception.StatusCodeException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import models.Player;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
-import utils.ErrorResp;
+import services.UserDao;
+import utils.Html;
 import utils.Threading;
 
-import static web.SessionService.COOKIE_NAME;
+import static utils.Log.LOGGER;
 
 public class FormRouter extends Jooby {
 
@@ -18,11 +21,15 @@ public class FormRouter extends Jooby {
     @AllArgsConstructor
     static class FormResp {
         String message;
+
+        public static String ofJson(String message, ObjectMapper jsonMapper) throws JsonProcessingException {
+            return jsonMapper.writeValueAsString(new FormResp(message));
+        }
     }
 
     public FormRouter(State state) {
         var jsonMapper = state.getJsonMapper();
-        var accountDao = state.getUserDao();
+        var userDao = state.getUserDao();
         var remoteDict = state.getRemoteDict();
         var sessionService = state.getSessionService();
         var gameService = state.getGameService();
@@ -38,7 +45,7 @@ public class FormRouter extends Jooby {
             var dupPassword = form.get("duplicate-password");
 
             if (username.isMissing() || password.isMissing()) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Form data is invalid", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
             }
 
             var usernameStr = username.toString();
@@ -46,31 +53,34 @@ public class FormRouter extends Jooby {
             var dupPasswordStr = dupPassword.toString();
 
             if (usernameStr.length() < 5 || usernameStr.length() > 20) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Username should be between 5 and 20 characters", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username should be between 5 and 20 characters", jsonMapper));
             }
-            if (!Jsoup.isValid(usernameStr, Safelist.basic())) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Username cannot contain invalid or unsafe characters", jsonMapper);
+            if (!Jsoup.isValid(usernameStr, Html.SAFELIST)) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username cannot contain invalid or unsafe characters", jsonMapper));
             }
             if (passwordStr.length() < 10 || passwordStr.length() > 100) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Password should be between 10 and 100 characters", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password should be between 10 and 100 characters", jsonMapper));
             }
             if (!passwordStr.equals(dupPasswordStr)) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Password and retyped password must be equal", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password and retyped password must be equal", jsonMapper));
             }
 
-            var inst = accountDao.insert(usernameStr, passwordStr);
-            if (inst == null) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Username is already taken, choose another", jsonMapper);
+            try {
+                var inst = userDao.insert(usernameStr, passwordStr);
+
+                var player = new Player(inst.getNewId(), inst.getUsername());
+
+                var sessionId = sessionService.createId();
+                var cookie = sessionService.createCookie(sessionId, player);
+                ctx.setResponseCookie(cookie);
+                remoteDict.setSession(sessionId, player, cookie.getMaxAge());
+
+                LOGGER.info("Registered a new player: " + player);
+
+                return new FormResp("Signed up successfully!");
+            } catch (UserDao.TakenUsernameException ex) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username is already taken, choose another", jsonMapper));
             }
-            assert inst != null;
-            var player = new Player(inst.getNewId(), inst.getUsername());
-
-            var sessionId = sessionService.createId();
-            var cookie = sessionService.createCookie(sessionId, player);
-            ctx.setResponseCookie(cookie);
-//            remoteDict.setSession(sessionId, player, cookie.getMaxAge());
-
-            return new FormResp("Signed up successfully!");
         });
 
         post("/forms/login", ctx -> {
@@ -80,39 +90,119 @@ public class FormRouter extends Jooby {
             var username = form.get("username");
             var password = form.get("password");
             if (username.isMissing() || password.isMissing()) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Form data is invalid", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
             }
 
             var usernameStr = username.toString();
             var passwordStr = password.toString();
-            var player = accountDao.verify(usernameStr, passwordStr);
+
+            var player = userDao.verify(usernameStr, passwordStr);
             if (player == null) {
-                ErrorResp.throwJson(StatusCode.UNAUTHORIZED, "Login credentials are invalid", jsonMapper);
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
             }
-            assert player != null;
 
             var sessionId = sessionService.createId();
             var cookie = sessionService.createCookie(sessionId, player);
             ctx.setResponseCookie(cookie);
-//            remoteDict.setSession(sessionId, player, cookie.getMaxAge());
+            remoteDict.setSession(sessionId, player, cookie.getMaxAge());
+
+            LOGGER.info("Player has logged in: " + player);
 
             return new FormResp("Logged in successfully!");
+        });
+
+        post("/forms/update-user", ctx -> {
+            ctx.setResponseHeader("Content-Type", "application/json");
+
+            var form = ctx.form();
+            var username = form.get("username");
+            var password = form.get("password");
+            var newUsername = form.get("new-username");
+            var newCountry = form.get("new-country");
+
+            if (username.isMissing() || password.isMissing() || newUsername.isMissing() || newCountry.isMissing()) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
+            }
+
+            var usernameStr = username.toString();
+            var passwordStr = password.toString();
+            var newUsernameStr = newUsername.toString();
+            var newCountryStr = newCountry.toString();
+
+            var player = userDao.verify(usernameStr, passwordStr);
+            if (player == null) {
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
+            }
+            userDao.update(player.getId(), newUsernameStr, newCountryStr);
+
+            LOGGER.info(String.format("Updated data of user: %s to newUsername: %s newCountry: %s", player, newUsernameStr, newCountryStr));
+
+            return new FormResp("Updated password successfully!");
+        });
+
+        post("/forms/update-password", ctx -> {
+            ctx.setResponseHeader("Content-Type", "application/json");
+
+            var form = ctx.form();
+            var username = form.get("username");
+            var password = form.get("password");
+            var newPassword = form.get("new-password");
+            if (username.isMissing() || password.isMissing() || newPassword.isMissing()) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
+            }
+
+            var usernameStr = username.toString();
+            var passwordStr = password.toString();
+            var newPasswordStr = newPassword.toString();
+
+            var player = userDao.verify(usernameStr, passwordStr);
+            if (player == null) {
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
+            }
+            userDao.updatePassword(player.getId(), newPasswordStr);
+
+            LOGGER.info("Updated the password for player: " + player);
+
+            return new FormResp("Updated password successfully!");
+        });
+
+        post("/forms/update-session", ctx -> {
+            ctx.setResponseHeader("Content-Type", "application/json");
+
+            var cookieStr =  ctx.header("Cookie").valueOrNull();
+
+            var session = sessionService.getSession(cookieStr);
+            if (session == null) {
+                var cookie = sessionService.createEmptyCookie();
+                ctx.setResponseCookie(cookie);
+            } else {
+                var cookie = sessionService.createCookie(session.getSessionId(), new Player(session.getPlayerId(), session.getUsername()));
+                ctx.setResponseCookie(cookie);
+                remoteDict.updateSessionEx(session.getSessionId(), cookie.getMaxAge());
+            }
+
+            LOGGER.info("Updated the session for player: " + session);
+
+            return new FormResp("Updated session successfully!");
         });
 
         post("/forms/logout", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
 
-            var session = sessionService.getSession(ctx);
+            var cookieStr =  ctx.header("Cookie").valueOrNull();
+
+            var session = sessionService.getSession(cookieStr);
             remoteDict.deleteSession(session.getSessionId());
 
             var cookie = sessionService.createEmptyCookie();
             ctx.setResponseCookie(cookie);
-            remoteDict.deleteSession(session.getSessionId());
+
+            LOGGER.info("Player has logged out: " + session);
 
             return new FormResp("Logged out successfully!");
         });
 
-        post("/forms/games/create", ctx -> {
+        post("/forms/create-game", ctx -> {
             var colorParam = ctx.query("color").toOptional().orElse(null);
 
             Boolean isFirstPlayerWhite = null;

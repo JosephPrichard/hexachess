@@ -1,13 +1,16 @@
 package web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import domain.Hexagon;
 import domain.Move;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import io.jooby.WebSocket;
+import io.jooby.exception.StatusCodeException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import models.GameState;
 import models.Player;
@@ -21,6 +24,20 @@ import static utils.Log.LOGGER;
 
 public class WsRouter extends Jooby {
 
+    @Getter
+    @AllArgsConstructor
+    static class ErrorResp {
+        String message;
+
+        public static String ofJson(String message, ObjectMapper jsonMapper) {
+            try {
+                return jsonMapper.writeValueAsString(new FormRouter.FormResp(message));
+            } catch (JsonProcessingException ex) {
+                throw new StatusCodeException(StatusCode.SERVER_ERROR);
+            }
+        }
+    }
+
     public WsRouter(State state) {
         var jsonMapper = state.getJsonMapper();
         var broadcastService = state.getBroadcaster();
@@ -30,7 +47,7 @@ public class WsRouter extends Jooby {
             var sessionId = ctx.query("sessionId").valueOrNull(); // query is safe for secrets over a websocket when using wss
             var gameIdSlug = ctx.path("id");
             if (gameIdSlug.isMissing()) {
-                ErrorResp.throwJson(StatusCode.BAD_REQUEST, "Invalid request: must contain id within slug", jsonMapper);
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, ErrorResp.ofJson("Invalid request: must contain id within slug", jsonMapper));
             }
 
             var gameId = gameIdSlug.toString();

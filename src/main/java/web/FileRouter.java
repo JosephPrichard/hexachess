@@ -14,12 +14,13 @@ public class FileRouter extends Jooby {
         assets("/scripts/session.js", "/scripts/session.js");
 
         get("/files/flags/{name}", ctx -> {
+            ctx.setResponseType("image/png");
+
             var name = ctx.path("name").toOptional().orElse("");
             var fileBytes = filesMap.get(name);
             if (fileBytes == null) {
                 throw new NotFoundException("The requested file does not exist: " + name);
             }
-            ctx.setResponseType("image/png");
             return fileBytes;
         });
     }

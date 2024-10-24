@@ -49,7 +49,7 @@ public class GlobalBroadcaster implements Broadcaster {
 
     public JedisPubSub startListenSubscribe() throws ExecutionException, InterruptedException {
         CompletableFuture<JedisPubSub> futureSubscriber = new CompletableFuture<>();
-        var thread = new Thread(() -> {
+        var thread = Thread.ofVirtual().start(() -> {
             var subscriber = new JedisPubSub() {
                 @Override
                 public void onSubscribe(String channel, int subscribedChannels) {

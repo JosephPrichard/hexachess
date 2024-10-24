@@ -18,6 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 public class UserEntity {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    public static final float START_ELO = 1000f;
 
     String id;
     String username;

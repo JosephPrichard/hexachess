@@ -1,5 +1,6 @@
 package services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import lombok.AllArgsConstructor;
@@ -8,7 +9,6 @@ import models.GameState;
 import models.Player;
 import models.RankedUser;
 import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.resps.Tuple;
 import utils.Serializer;
 
 import java.io.IOException;
@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static utils.Log.LOGGER;
 
@@ -47,19 +46,6 @@ public class RemoteDict {
             return null;
         }
         return Serializer.deserialize(bytes, GameState.class);
-    }
-
-    public List<GameState> getGames(Stream<String> ids) {
-        expireGames();
-
-        var fullIds = ids.map(id -> ("game:" + id).getBytes()).toList();
-
-        var bytesList = jedis.mget(fullIds.toArray(byte[][]::new));
-        if (bytesList == null) {
-            return null;
-        }
-
-        return bytesList.stream().map((bytes) -> Serializer.deserialize(bytes, GameState.class)).toList();
     }
 
     public GameState setGame(String id, GameState gameState) {
@@ -114,7 +100,17 @@ public class RemoteDict {
             nextCursor = tuples.remove(tuples.size() - 1).getScore();
         }
 
-        var gameStates = getGames(tuples.stream().map(Tuple::getElement));
+        byte[][] fullIds = new byte[tuples.size()][];
+        for (int i = 0; i < tuples.size(); i++) {
+            fullIds[i] = tuples.get(i).getBinaryElement();
+        }
+
+        var bytesList = jedis.mget(fullIds);
+        if (bytesList == null) {
+            return null;
+        }
+
+        var gameStates = bytesList.stream().map((bytes) -> Serializer.deserialize(bytes, GameState.class)).toList();
         return new GetGamesResult(nextCursor, gameStates);
     }
 
@@ -137,9 +133,14 @@ public class RemoteDict {
         try {
             var str = jsonMapper.writeValueAsString(player);
             jedis.setex(fullId, expirySeconds, str);
-        } catch (IOException ex) {
+        } catch (JsonProcessingException ex) {
             LOGGER.info("Failed to serialize an input json object to dictionary " + ex);
         }
+    }
+
+    public void updateSessionEx(String sessionId, long expirySeconds) {
+        var fullId = "session:" + sessionId;
+        jedis.expire(fullId, expirySeconds);
     }
 
     public void deleteSession(String sessionId) {
@@ -170,21 +171,17 @@ public class RemoteDict {
     }
 
     public Leaderboard getLeaderboard(int startRank, int count) {
-        var p = jedis.pipelined();
-        var idsResp = p.zrange(LEADERBOARD_ZSET, startRank, startRank - 1 + count);
-        var elemCountResp = p.zcount(LEADERBOARD_ZSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        p.sync();
+        var ids = jedis.zrange(LEADERBOARD_ZSET, startRank, startRank - 1 + count);
+        var elemCount = jedis.zcount(LEADERBOARD_ZSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        var ids = idsResp.get();
-        var totalCount = elemCountResp.get().intValue();
-        var pageCount = totalCount / count;
+        var pageCount = elemCount / count;
 
         List<RankedUser> users = new ArrayList<>();
         for (int i = 0; i < ids.size(); i++) {
             var id = ids.get(i);
             users.add(new RankedUser(id, startRank + i + 1));
         }
-        return new Leaderboard(users, pageCount);
+        return new Leaderboard(users, (int) pageCount);
     }
 
     public Leaderboard getLeaderboardPage(int page, int perPage) {

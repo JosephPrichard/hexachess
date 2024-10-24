@@ -65,27 +65,6 @@ public class UserDaoTest {
     }
 
     @Test
-    public void testUpdateAccounts() {
-        // when
-        var inst1 = userDao.insert("user1", "password1");
-        var inst2 = userDao.insert("user2", "password2");
-        var inst3 = userDao.insert("user3", "password3");
-
-        var player1 = userDao.verify("user1", "password1");
-        var player2 = userDao.verify("user2", "password2");
-        var player3 = userDao.verify("user2", "wrong-password");
-        var player4 = userDao.verify("user3", "password3");
-        var player5 = userDao.verify("user1", "password3");
-
-        // then
-        Assertions.assertEquals(player1.getId(), inst1.getNewId());
-        Assertions.assertEquals(player2.getId(), inst2.getNewId());
-        Assertions.assertNull(player3);
-        Assertions.assertEquals(player4.getId(), inst3.getNewId());
-        Assertions.assertNull(player5);
-    }
-
-    @Test
     public void testUpdateStatsUsingResult() {
         // given
         createTestData(userDao);
@@ -109,13 +88,13 @@ public class UserDaoTest {
     }
 
     @Test
-    public void testUpdateAccount() {
+    public void testUpdateUsername() {
         // given
         createTestData(userDao);
 
         // when
-        userDao.updateAccount("id1", "user1-changed", "us");
-        userDao.updateAccount("id2", "user2-changed", "eu");
+        userDao.update("id1", "user1-changed", "us");
+        userDao.update("id2", "user2-changed", "eu");
 
         var actualUsers1 = userDao.getById("id1");
         var actualUsers2 = userDao.getById("id2");
@@ -188,23 +167,6 @@ public class UserDaoTest {
         var expectedUserList = List.of(
             new UserEntity("id6", "johnny", "us", 0f, 0f, 0, 0, 1, null),
             new UserEntity("id7", "john", "us", 0f, 0f, 0, 0, 2, null));
-        Assertions.assertEquals(expectedUserList, actualUserList);
-    }
-
-    @Test
-    public void quickSearchByName() {
-        // given
-        createTestData(userDao);
-        userDao.insert(new UserDao.UserInst("id6", "johnny", "password6", "us", 0f, 0, 0));
-        userDao.insert(new UserDao.UserInst("id7", "john", "password7", "us", 0f, 0, 0));
-
-        // when
-        var actualUserList = userDao.quickSearchByName("john");
-
-        // then
-        var expectedUserList = List.of(
-            new UserDao.UserTuple("id6", "johnny"),
-            new UserDao.UserTuple("id7", "john"));
         Assertions.assertEquals(expectedUserList, actualUserList);
     }
 

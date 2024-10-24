@@ -11,6 +11,8 @@ import redis.embedded.RedisServer;
 
 import java.util.List;
 
+import static utils.Log.LOGGER;
+
 // this is an integration test that runs against a real redis instance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RemoteDictTest {
@@ -21,9 +23,13 @@ public class RemoteDictTest {
 
     @BeforeAll
     public void beforeAll() {
-        redisServer = new RedisServer(6379);
-        redisServer.start();
-        jedis = new JedisPooled("localhost", 6379);
+        redisServer = new RedisServer(7777);
+        try {
+            redisServer.start();
+        } catch (RuntimeException ex) {
+            LOGGER.info("Redis instance is already started");
+        }
+        jedis = new JedisPooled("localhost", 7777);
         remoteDict = new RemoteDict(jedis, new JsonMapper());
     }
 

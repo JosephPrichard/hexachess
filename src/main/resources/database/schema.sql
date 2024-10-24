@@ -22,7 +22,7 @@ CREATE TABLE users_metadata (
     count INTEGER,
     PRIMARY KEY (id));
 
-CREATE TABLE histories (
+CREATE TABLE game_histories (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     whiteId VARCHAR NOT NULL,
     blackId VARCHAR NOT NULL,
@@ -37,14 +37,14 @@ CREATE INDEX idxTrgmUsername ON users USING GIST (username gist_trgm_ops);
 CREATE INDEX idxUsername ON users(username);
 CREATE INDEX idxElo ON users(elo);
 
-CREATE INDEX idxWhiteId ON histories(whiteId, id);
-CREATE INDEX idxBlackId ON histories(blackId, id);
-CREATE INDEX idxBothIds ON histories(whiteId, blackId, id);
+CREATE INDEX idxWhiteId ON game_histories(whiteId, id);
+CREATE INDEX idxBlackId ON game_histories(blackId, id);
+CREATE INDEX idxBothIds ON game_histories(whiteId, blackId, id);
 
 -- Create functions and procedures.
 CREATE FUNCTION probabilityWins(IN elo1 NUMERIC, IN elo2 NUMERIC)
     RETURNS NUMERIC
-LANGUAGE plpgsql
+    LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN 1.0 / (1.0 + POWER(10, (elo1 - elo2) / 400.0));
@@ -53,7 +53,7 @@ END $$;
 CREATE PROCEDURE updateStatsUsingResult(
     IN winId VARCHAR, IN loseId VARCHAR,
     OUT winEloNext NUMERIC, OUT loseEloNext NUMERIC)
-LANGUAGE plpgsql
+    LANGUAGE plpgsql
 AS $$
 DECLARE
     winElo NUMERIC;

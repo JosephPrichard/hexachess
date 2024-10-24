@@ -1,12 +1,10 @@
 package web;
 
 import io.jooby.Jooby;
+import io.jooby.MediaType;
 import io.jooby.StatusCode;
-import models.HistoryEntity;
-import models.UserEntity;
-import web.State;
-
-import static utils.Log.LOGGER;
+import models.HistEntity;
+import utils.Constants;
 
 public class PartialsRouter extends Jooby {
 
@@ -21,6 +19,8 @@ public class PartialsRouter extends Jooby {
         });
 
         get("/partials/player-history", ctx -> {
+            ctx.setResponseType(MediaType.HTML);
+
             var userIdSlug = ctx.query("id");
             if (userIdSlug.isMissing()) {
                 ctx.setResponseCode(StatusCode.BAD_REQUEST_CODE);
@@ -29,13 +29,13 @@ public class PartialsRouter extends Jooby {
             var userId = userIdSlug.toString();
             Long afterId = ctx.query("afterId").toOptional().map(Long::parseUnsignedLong).orElse(null);
 
-            var historyList = historyDao.getUserHistories(userId, afterId, 10);
+            var historyList = historyDao.getUserHistories(userId, afterId, 25);
             if (historyList.isEmpty()) {
                 ctx.setResponseCode(StatusCode.NOT_FOUND_CODE);
                 return "";
             }
 
-            historyList.forEach(HistoryEntity::sanitize);
+            historyList.forEach(HistEntity::sanitize);
 
             var template = templates.getHistoryListTemplate();
             return template.apply(historyList);

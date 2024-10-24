@@ -6,9 +6,8 @@ import io.jooby.Route;
 import io.jooby.StatusCode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import models.HistoryEntity;
+import models.HistEntity;
 import models.Pagination;
-import models.RankedUser;
 import models.UserEntity;
 import utils.Threading;
 
@@ -28,7 +27,7 @@ public class PageRouter extends Jooby {
     @AllArgsConstructor
     public static class ProfileView {
         UserEntity user;
-        List<HistoryEntity> historyList;
+        List<HistEntity> historyList;
     }
 
     @Data
@@ -39,12 +38,26 @@ public class PageRouter extends Jooby {
         Pagination pages;
     }
 
+    @Data
+    @AllArgsConstructor
+    public static class ErrorView {
+        int code;
+        String message;
+    }
+
+    private final String loginHtml;
+    private final String registerHtml;
+
     public PageRouter(State state) {
         var userDao = state.getUserDao();
         var historyDao = state.getHistoryDao();
         var gameService = state.getGameService();
         var remoteDict = state.getRemoteDict();
+        var sessionService = state.getSessionService();
         var templates = state.getTemplates();
+
+        loginHtml = Templates.applyQuietly(templates.getLoginTemplate());
+        registerHtml = Templates.applyQuietly(templates.getRegisterTemplate());
 
         setWorker(Threading.EXECUTOR);
 
@@ -61,7 +74,7 @@ public class PageRouter extends Jooby {
                 """;
             var code = StatusCode.NOT_FOUND_CODE;
             ctx.setResponseCode(code);
-            return template.apply(new Router.ErrorView(code, message));
+            return template.apply(new ErrorView(code, message));
         });
 
         Route.Handler indexHandler = (ctx) -> {
@@ -76,11 +89,27 @@ public class PageRouter extends Jooby {
 
         get("/play", indexHandler);
 
-        var loginPage = Templates.applyQuietly(templates.getLoginTemplate());
-        get("/login", ctx -> loginPage);
+        get("/login", ctx -> loginHtml);
 
-        var registerPage = Templates.applyQuietly(templates.getRegisterTemplate());
-        get("/register", ctx -> registerPage);
+        get("/register", ctx -> registerHtml);
+
+        // this route is un-cacheable due to using cookies
+        get("/settings", ctx -> {
+            var cookieStr =  ctx.header("Cookie").valueOrNull();
+
+            var session = sessionService.getSession(cookieStr);
+            if (session == null) {
+                var code = StatusCode.UNAUTHORIZED_CODE;
+                ctx.setResponseCode(code);
+                var template = templates.getErrorTemplate();
+                return template.apply(new ErrorView(code, "You must be logged in to access this page."));
+            }
+
+            var userEntity = userDao.getById(session.getPlayerId());
+
+            var template = templates.getSettingsTemplate();
+            return template.apply(userEntity);
+        });
 
         get("/leaderboard", ctx -> {
             try {
@@ -99,7 +128,7 @@ public class PageRouter extends Jooby {
                 var code = StatusCode.BAD_REQUEST_CODE;
                 ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
+                return template.apply(new ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
 
@@ -129,17 +158,17 @@ public class PageRouter extends Jooby {
                 var code = StatusCode.BAD_REQUEST_CODE;
                 ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new Router.ErrorView(code, "Invalid param 'id': must contain id within slug."));
+                return template.apply(new ErrorView(code, "Invalid param 'id': must contain id within slug."));
             }
             var userId = userIdSlug.toString();
 
             var userEntityFut = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
-            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 10), Threading.EXECUTOR);
+            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 25), Threading.EXECUTOR);
             var userEntity = userEntityFut.get();
             var historyList = historyListFut.get();
 
             userEntity.sanitize();
-            historyList.forEach(HistoryEntity::sanitize);
+            historyList.forEach(HistEntity::sanitize);
 
             var template = templates.getProfileTemplate();
             return template.apply(new ProfileView(userEntity, historyList));
@@ -189,7 +218,7 @@ public class PageRouter extends Jooby {
                 var code = StatusCode.BAD_REQUEST_CODE;
                 ctx.setResponseCode(code);
                 var template = templates.getErrorTemplate();
-                return template.apply(new Router.ErrorView(code, "Invalid param 'page': must be a positive integer."));
+                return template.apply(new ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
         });
     }
