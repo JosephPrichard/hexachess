@@ -30,7 +30,7 @@ public class RemoteDictTest {
             LOGGER.info("Redis instance is already started");
         }
         jedis = new JedisPooled("localhost", 7777);
-        remoteDict = new RemoteDict(jedis, new JsonMapper());
+        remoteDict = new RemoteDict(jedis);
     }
 
     @BeforeEach

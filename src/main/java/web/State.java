@@ -27,16 +27,12 @@ public class State {
     Templates templates;
     Map<String, byte[]> files;
 
-    private final ObjectMapper jsonMapper = new ObjectMapper()
-        .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
-        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
     public State(JedisPooled jedis, HikariDataSource ds, Handlebars handlebars, Map<String, byte[]> filesMap) throws IOException {
         userDao = new UserDao(ds);
         historyDao = new HistoryDao(ds);
-        remoteDict = new RemoteDict(jedis, jsonMapper);
+        remoteDict = new RemoteDict(jedis);
         gameService = new GameService(remoteDict, userDao, historyDao);
-        sessionService = new SessionService(jsonMapper);
+        sessionService = new SessionService();
         broadcaster = new GlobalBroadcaster(jedis);
         templates = new Templates(handlebars);
         files = filesMap;

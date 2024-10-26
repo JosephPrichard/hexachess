@@ -5,12 +5,11 @@ import lombok.AllArgsConstructor;
 import models.GameState;
 import models.HistEntity;
 import models.Player;
-import utils.Serializer;
-import utils.Threading;
 
 import java.util.Random;
 import java.util.UUID;
 
+import static utils.Globals.*;
 import static utils.Log.LOGGER;
 
 @AllArgsConstructor
@@ -103,8 +102,8 @@ public class GameService {
 
         if (game.isCheckmate()) {
             state.setEnded(true);
-            var isWhiteWin = !game.getBoard().turn().isWhite(); // white wins if its checkmate when it's NOT their turn
-            Threading.EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
+            var isWhiteWin = game.getBoard().turn().isBlack(); // white wins if its checkmate when it's blacks turn
+            EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
         }
 
         LOGGER.info(String.format("%s made move %s on game %s", player, move, gameId));
@@ -119,13 +118,13 @@ public class GameService {
             var winId = isWhiteWin ? whiteId : blackId;
             var loseId = isWhiteWin ? blackId : whiteId;
 
-            var moveHistoryData = Serializer.serialize(state.getMoveHistory());
+            var moveHistoryData = JSON_MAPPER.writeValueAsString(state.getHistory());
 
             var changeSet = userDao.updateStatsUsingResult(winId, loseId);
             remoteDict.updateLeaderboardUser(
                 new RemoteDict.EloChangeSet(winId, changeSet.winEloDiff),
                 new RemoteDict.EloChangeSet(loseId, changeSet.loseEloDiff));
-            historyDao.insert(whiteId, blackId, result, moveHistoryData, changeSet.getWinEloDiff(), changeSet.getLoseEloDiff());
+            historyDao.insert(whiteId, blackId, result, changeSet.getWinEloDiff(), changeSet.getLoseEloDiff(), moveHistoryData);
         } catch (Exception ex) {
             LOGGER.info("Failed to persist game results to database in background thread " + ex);
         }

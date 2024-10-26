@@ -13,7 +13,7 @@
         </thead>
         <tbody>
             {{#each userList as |user|}}
-                <tr id="{{user.id}}" class="row-hover" onclick="window.location = '/players/' + '{{user.id}}';">
+                <tr id="user-{{user.id}}" class="row-hover" onclick="window.location = '/players/{{user.id}}';">
                     <td style="width: 9%">
                         {{user.rank}}
                     </td>

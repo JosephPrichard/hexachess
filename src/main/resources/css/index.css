@@ -33,30 +33,29 @@ a:hover {
     margin-bottom: 20px;
     display: flex;
     align-items: center;
-    padding-left: 10%;
-    padding-right: 10%;
+    padding-left: 15%;
+    padding-right: 15%;
     user-select: none;
     font-weight: 500;
 }
 
-.app-title {
-    margin: 0;
-    font-size: 32px;
-    margin-left: 20px;
-    margin-right: 20px;
+.banner-elem {
+    font-size: 18px;
+    height: 40%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10px 5px;
+    padding: 15px;
+    cursor: pointer;
+    border-radius: 6px;
     user-select: none;
     text-decoration: none;
 }
 
-.app-title:hover {
+.color-hover:hover {
+    background-color: rgb(43, 43, 43);
     text-decoration: none;
-}
-
-.banner-elem {
-    font-size: 18px;
-    margin-left: 20px;
-    margin-right: 20px;
-    cursor: pointer;
 }
 
 .banner-elem:hover {
@@ -93,9 +92,7 @@ table {
 }
 
 th, td {
-    padding: 8px;
-    padding-left: 24px;
-    padding-right: 24px;
+    padding: 8px 24px;
     text-align: left;
     font-weight: 500;
 }
@@ -140,7 +137,7 @@ tr {
 }
 
 .text-md {
-    font-size: 20px;
+    font-size: 30px;
 }
 
 .center-container {
@@ -230,6 +227,8 @@ input {
 }
 
 .button-grey {
+    height: 35px;
+    font-size: 15px;
     min-width: 150px;
     color: #fff;
     cursor: pointer;
@@ -266,10 +265,6 @@ input {
     top: 2px;
     height: 37px;
     margin-left: 10px;
-}
-
-.color-hover:hover {
-    color: rgb(255, 255, 255);
 }
 
 .red-color {
@@ -333,4 +328,24 @@ input {
     position: absolute;
     aspect-ratio: 1 / cos(30deg);
     clip-path: polygon(50% -50%, 100% 50%, 50% 150%, 0 50%);
+}
+
+.loader {
+    width: 24px;
+    height: 24px;
+    border: 5px solid #FFF;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }

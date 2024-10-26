@@ -21,8 +21,6 @@ public class SessionService {
     public static final String COOKIE_NAME = "session";
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    private final ObjectMapper jsonMapper;
-
     public String createId() {
         var length = 100;
         var sb = new StringBuilder(length);
@@ -42,7 +40,7 @@ public class SessionService {
         String username;
     }
 
-    public Cookie createCookie(String sessionId, Player player) throws JsonProcessingException {
+    public Cookie createCookie(String sessionId, Player player) {
         return createCookie(sessionId, player.getId(), player.getName());
     }
 

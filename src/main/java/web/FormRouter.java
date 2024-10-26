@@ -11,8 +11,9 @@ import models.Player;
 import org.jsoup.Jsoup;
 import services.UserDao;
 import utils.Html;
-import utils.Threading;
 
+import static utils.Globals.EXECUTOR;
+import static utils.Globals.JSON_MAPPER;
 import static utils.Log.LOGGER;
 
 public class FormRouter extends Jooby {
@@ -22,19 +23,18 @@ public class FormRouter extends Jooby {
     static class FormResp {
         String message;
 
-        public static String ofJson(String message, ObjectMapper jsonMapper) throws JsonProcessingException {
-            return jsonMapper.writeValueAsString(new FormResp(message));
+        public static String ofJson(String message) throws JsonProcessingException {
+            return JSON_MAPPER.writeValueAsString(new FormResp(message));
         }
     }
 
     public FormRouter(State state) {
-        var jsonMapper = state.getJsonMapper();
         var userDao = state.getUserDao();
         var remoteDict = state.getRemoteDict();
         var sessionService = state.getSessionService();
         var gameService = state.getGameService();
 
-        setWorker(Threading.EXECUTOR);
+        setWorker(EXECUTOR);
 
         post("/forms/signup", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
@@ -45,7 +45,7 @@ public class FormRouter extends Jooby {
             var dupPassword = form.get("duplicate-password");
 
             if (username.isMissing() || password.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid"));
             }
 
             var usernameStr = username.toString();
@@ -53,16 +53,16 @@ public class FormRouter extends Jooby {
             var dupPasswordStr = dupPassword.toString();
 
             if (usernameStr.length() < 5 || usernameStr.length() > 20) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username should be between 5 and 20 characters", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username should be between 5 and 20 characters"));
             }
             if (!Jsoup.isValid(usernameStr, Html.SAFELIST)) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username cannot contain invalid or unsafe characters", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username cannot contain invalid or unsafe characters"));
             }
             if (passwordStr.length() < 10 || passwordStr.length() > 100) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password should be between 10 and 100 characters", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password should be between 10 and 100 characters"));
             }
             if (!passwordStr.equals(dupPasswordStr)) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password and retyped password must be equal", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password and retyped password must be equal"));
             }
 
             try {
@@ -79,7 +79,7 @@ public class FormRouter extends Jooby {
 
                 return new FormResp("Signed up successfully!");
             } catch (UserDao.TakenUsernameException ex) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username is already taken, choose another", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username is already taken, choose another"));
             }
         });
 
@@ -90,7 +90,7 @@ public class FormRouter extends Jooby {
             var username = form.get("username");
             var password = form.get("password");
             if (username.isMissing() || password.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid"));
             }
 
             var usernameStr = username.toString();
@@ -98,7 +98,7 @@ public class FormRouter extends Jooby {
 
             var player = userDao.verify(usernameStr, passwordStr);
             if (player == null) {
-                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid"));
             }
 
             var sessionId = sessionService.createId();
@@ -117,51 +117,24 @@ public class FormRouter extends Jooby {
             var form = ctx.form();
             var username = form.get("username");
             var password = form.get("password");
-            var newUsername = form.get("new-username");
-            var newCountry = form.get("new-country");
 
-            if (username.isMissing() || password.isMissing() || newUsername.isMissing() || newCountry.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
+            if (username.isMissing() || password.isMissing()) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid"));
             }
 
             var usernameStr = username.toString();
             var passwordStr = password.toString();
-            var newUsernameStr = newUsername.toString();
-            var newCountryStr = newCountry.toString();
+            var newUsernameStr = form.get("new-username").valueOrNull();
+            var newCountryStr = form.get("new-country").valueOrNull();
+            var newPasswordStr = form.get("new-password").valueOrNull();
 
             var player = userDao.verify(usernameStr, passwordStr);
             if (player == null) {
-                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid"));
             }
-            userDao.update(player.getId(), newUsernameStr, newCountryStr);
+            userDao.update(player.getId(), newUsernameStr, newCountryStr, newPasswordStr);
 
             LOGGER.info(String.format("Updated data of user: %s to newUsername: %s newCountry: %s", player, newUsernameStr, newCountryStr));
-
-            return new FormResp("Updated password successfully!");
-        });
-
-        post("/forms/update-password", ctx -> {
-            ctx.setResponseHeader("Content-Type", "application/json");
-
-            var form = ctx.form();
-            var username = form.get("username");
-            var password = form.get("password");
-            var newPassword = form.get("new-password");
-            if (username.isMissing() || password.isMissing() || newPassword.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid", jsonMapper));
-            }
-
-            var usernameStr = username.toString();
-            var passwordStr = password.toString();
-            var newPasswordStr = newPassword.toString();
-
-            var player = userDao.verify(usernameStr, passwordStr);
-            if (player == null) {
-                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid", jsonMapper));
-            }
-            userDao.updatePassword(player.getId(), newPasswordStr);
-
-            LOGGER.info("Updated the password for player: " + player);
 
             return new FormResp("Updated password successfully!");
         });

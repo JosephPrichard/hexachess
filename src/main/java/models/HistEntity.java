@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jsoup.Jsoup;
-import utils.Constants;
+import utils.Globals;
 import utils.Html;
 
 import java.sql.Timestamp;
@@ -27,6 +27,7 @@ public class HistEntity {
     String blackName;
     String whiteCountry;
     String blackCountry;
+    String data; // this is expensive, so for certain views we don't fetch it
     int result;
     float winElo;
     float loseElo;
@@ -68,18 +69,18 @@ public class HistEntity {
 
     public String getWhiteEloColor() {
         return switch (result) {
-            case WHITE_WIN -> Constants.GREEN_COLOR;
-            case BLACK_WIN -> Constants.RED_COLOR;
-            case DRAW -> Constants.YELLOW_COLOR;
+            case WHITE_WIN -> Globals.GREEN_COLOR;
+            case BLACK_WIN -> Globals.RED_COLOR;
+            case DRAW -> Globals.YELLOW_COLOR;
             default -> throw new IllegalStateException("Invalid result state " + result);
         };
     }
 
     public String getBlackEloColor() {
         return switch (result) {
-            case WHITE_WIN -> Constants.RED_COLOR;
-            case BLACK_WIN -> Constants.GREEN_COLOR;
-            case DRAW -> Constants.YELLOW_COLOR;
+            case WHITE_WIN -> Globals.RED_COLOR;
+            case BLACK_WIN -> Globals.GREEN_COLOR;
+            case DRAW -> Globals.YELLOW_COLOR;
             default -> throw new IllegalStateException("Invalid result state " + result);
         };
     }

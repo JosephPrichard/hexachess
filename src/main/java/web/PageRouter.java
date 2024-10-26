@@ -9,10 +9,11 @@ import lombok.Data;
 import models.HistEntity;
 import models.Pagination;
 import models.UserEntity;
-import utils.Threading;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import static utils.Globals.EXECUTOR;
 
 public class PageRouter extends Jooby {
 
@@ -59,7 +60,7 @@ public class PageRouter extends Jooby {
         loginHtml = Templates.applyQuietly(templates.getLoginTemplate());
         registerHtml = Templates.applyQuietly(templates.getRegisterTemplate());
 
-        setWorker(Threading.EXECUTOR);
+        setWorker(EXECUTOR);
 
         use(next -> ctx -> {
             ctx.setResponseType(MediaType.HTML);
@@ -115,8 +116,8 @@ public class PageRouter extends Jooby {
             try {
                 int page = ctx.query("page").toOptional().map(Integer::parseUnsignedInt).orElse(1);
 
-                var entityListFut = CompletableFuture.supplyAsync(() -> userDao.getLeaderboard(page, 25), Threading.EXECUTOR);
-                var totalPagesFut = CompletableFuture.supplyAsync(() -> userDao.countPages(25), Threading.EXECUTOR);
+                var entityListFut = CompletableFuture.supplyAsync(() -> userDao.getLeaderboard(page, 25), EXECUTOR);
+                var totalPagesFut = CompletableFuture.supplyAsync(() -> userDao.countPages(25), EXECUTOR);
                 var entityList = entityListFut.get();
                 var totalPages = totalPagesFut.get();
 
@@ -162,8 +163,8 @@ public class PageRouter extends Jooby {
             }
             var userId = userIdSlug.toString();
 
-            var userEntityFut = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), Threading.EXECUTOR);
-            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 25), Threading.EXECUTOR);
+            var userEntityFut = CompletableFuture.supplyAsync(() -> userDao.getByIdWithRank(userId), EXECUTOR);
+            var historyListFut = CompletableFuture.supplyAsync(() -> historyDao.getUserHistories(userId, null, 25), EXECUTOR);
             var userEntity = userEntityFut.get();
             var historyList = historyListFut.get();
 
@@ -220,6 +221,22 @@ public class PageRouter extends Jooby {
                 var template = templates.getErrorTemplate();
                 return template.apply(new ErrorView(code, "Invalid param 'page': must be a positive integer."));
             }
+        });
+
+        get("/games/histories/{id}", ctx -> {
+            var historyIdSlug = ctx.path("id");
+            if (historyIdSlug.isMissing()) {
+                var code = StatusCode.BAD_REQUEST_CODE;
+                ctx.setResponseCode(code);
+                var template = templates.getErrorTemplate();
+                return template.apply(new ErrorView(code, "Invalid param 'id': must contain id within slug."));
+            }
+            var historyId = Long.parseUnsignedLong(historyIdSlug.toString());
+
+            var history = historyDao.getHistory(historyId);
+
+            var template = templates.getGameHistoryTemplate();
+            return template.apply(history);
         });
     }
 }

@@ -45,21 +45,21 @@ public class HistoryDaoTest {
         createTestUserData(userDao);
 
         // when
-        historyDao.insert("id1", "id2", HistEntity.WHITE_WIN, "data1".getBytes(), 30, -30);
-        historyDao.insert("id2", "id3", HistEntity.BLACK_WIN, "data2".getBytes(), 30, -30);
-        historyDao.insert("id3", "id1", HistEntity.DRAW, "data3".getBytes(), 30, -30);
+        historyDao.insert("id1", "id2", HistEntity.WHITE_WIN, 30, -30, "data1");
+        historyDao.insert("id2", "id3", HistEntity.BLACK_WIN, 30, -30, "data2");
+        historyDao.insert("id3", "id1", HistEntity.DRAW, 30, -30, "data3");
 
         var actualHistory1 = historyDao.getHistory(1);
         var actualHistory2 = historyDao.getHistory(2);
         var actualHistory3 = historyDao.getHistory(3);
 
         // then
-        var expectedHistory1 = new HistEntity(1, "id1", "id2",
-            "user1", "user2", "us", "us", HistEntity.WHITE_WIN, 30, -30, null);
-        var expectedHistory2 = new HistEntity(2, "id2",
-            "id3", "user2", "user3", "us", "us", HistEntity.BLACK_WIN, 30, -30, null);
-        var expectedHistory3 = new HistEntity(3, "id3",
-            "id1", "user3", "user1", "us", "us", HistEntity.DRAW, 30, -30, null);
+        var expectedHistory1 = new HistEntity(1, "id1", "id2", "user1", "user2",
+            "us", "us", "data1", HistEntity.WHITE_WIN, 30, -30, null);
+        var expectedHistory2 = new HistEntity(2, "id2", "id3", "user2", "user3",
+            "us", "us", "data2", HistEntity.BLACK_WIN, 30, -30, null);
+        var expectedHistory3 = new HistEntity(3, "id3", "id1", "user3", "user1",
+            "us", "us", "data3", HistEntity.DRAW, 30, -30, null);
 
         Assertions.assertEquals(expectedHistory1, actualHistory1);
         Assertions.assertEquals(expectedHistory2, actualHistory2);
@@ -72,22 +72,22 @@ public class HistoryDaoTest {
         createTestUserData(userDao);
 
         // when
-        historyDao.insert("id1", "id2", HistEntity.WHITE_WIN, "data1".getBytes(), 30, -30);
-        historyDao.insert("id2", "id3", HistEntity.BLACK_WIN, "data2".getBytes(), 30, -30);
-        historyDao.insert("id3", "id1", HistEntity.DRAW, "data3".getBytes(), 30, -30);
+        historyDao.insert("id1", "id2", HistEntity.WHITE_WIN, 30, -30, "data1");
+        historyDao.insert("id2", "id3", HistEntity.BLACK_WIN, 30, -30, "data2");
+        historyDao.insert("id3", "id1", HistEntity.DRAW, 30, -30, "data3");
 
         var actualHistoryList1 = historyDao.getUserHistories("id1", null, 5);
         var actualHistoryList2 = historyDao.getUserHistories("id1", 3L, 5);
 
         // then
         var expectedHistoryList1 = List.of(
-            new HistEntity(3, "id3", "id1", "user3", "user1",
-                "us", "us", HistEntity.DRAW, 30, -30, null),
-            new HistEntity(1, "id1", "id2", "user1", "user2",
-                "us", "us", HistEntity.WHITE_WIN, 30, -30, null));
+            new HistEntity(3, "id3", "id1", "user3", "user1", "us", "us",
+                "data1", HistEntity.DRAW, 30, -30, null),
+            new HistEntity(1, "id1", "id2", "user1", "user2", "us", "us",
+                "data2", HistEntity.WHITE_WIN, 30, -30, null));
         var expectedHistoryList2 = List.of(
-            new HistEntity(1, "id1", "id2", "user1", "user2",
-                "us", "us", HistEntity.WHITE_WIN, 30, -30, null));
+            new HistEntity(1, "id1", "id2", "user1", "user2", "us", "us",
+                "data3", HistEntity.WHITE_WIN, 30, -30, null));
 
         Assertions.assertEquals(expectedHistoryList1, actualHistoryList1);
         Assertions.assertEquals(expectedHistoryList2, actualHistoryList2);

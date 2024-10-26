@@ -1,17 +1,27 @@
 package services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import domain.Hexagon;
+import domain.Move;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import models.GameState;
 import models.HistEntity;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
+import utils.Globals;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+
+import static utils.Globals.JSON_MAPPER;
 
 public class HistoryDao {
 
@@ -30,24 +40,25 @@ public class HistoryDao {
         String whiteId;
         String blackId;
         int result;
-        byte[] data;
         Double winEloDiff;
         Double loseEloDiff;
+        String data;
     }
 
     public void insert(HistoryInst historyInst) {
         insert(
-            historyInst.getWhiteId(), historyInst.getBlackId(),
-            historyInst.getResult(), historyInst.getData(),
-            historyInst.getWinEloDiff(), historyInst.getLoseEloDiff());
+            historyInst.getWhiteId(),
+            historyInst.getBlackId(),
+            historyInst.getResult(),
+            historyInst.getWinEloDiff(),
+            historyInst.getLoseEloDiff(),
+            historyInst.getData());
     }
 
-    public void insert(String whiteId, String blackId, int result, byte[] data, double winEloDiff, double loseEloDiff) {
+    public void insert(String whiteId, String blackId, int result, double winEloDiff, double loseEloDiff, String data) {
         var sql = """
             BEGIN;
-            INSERT INTO
-                game_histories (whiteId, blackId, result, data, winElo, loseElo)
-                VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO game_histories (whiteId, blackId, result, data, winElo, loseElo) VALUES (?, ?, ?, ? ::json, ?, ?);
             END""";
         try {
             runner.execute(sql, whiteId, blackId, result, data, winEloDiff, loseEloDiff);
@@ -67,6 +78,7 @@ public class HistoryDao {
                 u1.country as whiteCountry,
                 u2.country as blackCountry,
                 h1.result,
+                h1.data,
                 h1.playedOn,
                 h1.winElo,
                 h1.loseElo

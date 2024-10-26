@@ -1,5 +1,6 @@
 package domain;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.function.Function;
 @Data
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
+@JsonSerialize(using = BoardSerializer.class)
 public class ChessBoard {
 
     // white pieces have an odd parity
@@ -49,6 +51,13 @@ public class ChessBoard {
         public boolean isBlack() {
             return this == BLACK;
         }
+
+        public int toInt() {
+            return switch (this) {
+                case WHITE -> 0;
+                case BLACK -> 1;
+            };
+        }
     }
 
     private Turn turn;
@@ -62,7 +71,7 @@ public class ChessBoard {
         this.turn = turn;
     }
 
-    public ChessBoard copy() {
+    public ChessBoard deepCopy() {
         return new ChessBoard(turn,
             Arrays.stream(pieces).map(byte[]::clone).toArray(byte[][]::new));
     }
@@ -269,28 +278,5 @@ public class ChessBoard {
         }
 
         return toString((hex) -> isAttacked[hex.getFile()][hex.getRank()]);
-    }
-
-    public String writePiecesAsJsonString() {
-        var sb = new StringBuilder();
-        sb.append("[");
-
-        for (int file = 0; file < pieces.length; file++) {
-            var piecesFile = pieces[file];
-            sb.append("[");
-            for (int rank = 0; rank < piecesFile.length; rank++) {
-                sb.append(piecesFile[rank]);
-                if (rank < piecesFile.length - 1) {
-                    sb.append(",");
-                }
-            }
-            sb.append("]");
-            if (file < pieces.length - 1) {
-                sb.append(",");
-            }
-        }
-        sb.append("]");
-
-        return sb.toString();
     }
 }

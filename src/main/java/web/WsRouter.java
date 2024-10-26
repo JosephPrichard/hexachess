@@ -1,8 +1,6 @@
 package web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import domain.Hexagon;
 import domain.Move;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
@@ -16,10 +14,8 @@ import models.GameState;
 import models.Player;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import services.GameService;
-import utils.ErrorResp;
-import utils.Threading;
-import web.State;
 
+import static utils.Globals.*;
 import static utils.Log.LOGGER;
 
 public class WsRouter extends Jooby {
@@ -29,9 +25,9 @@ public class WsRouter extends Jooby {
     static class ErrorResp {
         String message;
 
-        public static String ofJson(String message, ObjectMapper jsonMapper) {
+        public static String ofJson(String message) {
             try {
-                return jsonMapper.writeValueAsString(new FormRouter.FormResp(message));
+                return JSON_MAPPER.writeValueAsString(new FormRouter.FormResp(message));
             } catch (JsonProcessingException ex) {
                 throw new StatusCodeException(StatusCode.SERVER_ERROR);
             }
@@ -39,7 +35,6 @@ public class WsRouter extends Jooby {
     }
 
     public WsRouter(State state) {
-        var jsonMapper = state.getJsonMapper();
         var broadcastService = state.getBroadcaster();
         var remoteDict = state.getRemoteDict();
 
@@ -47,7 +42,7 @@ public class WsRouter extends Jooby {
             var sessionId = ctx.query("sessionId").valueOrNull(); // query is safe for secrets over a websocket when using wss
             var gameIdSlug = ctx.path("id");
             if (gameIdSlug.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, ErrorResp.ofJson("Invalid request: must contain id within slug", jsonMapper));
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, ErrorResp.ofJson("Invalid request: must contain id within slug"));
             }
 
             var gameId = gameIdSlug.toString();
@@ -111,21 +106,20 @@ public class WsRouter extends Jooby {
     public WebSocket.OnConnect handleGameConnect(State state, String gameId, Player player) {
         var gameService = state.getGameService();
         var socketExchange = state.getBroadcaster();
-        var jsonMapper = state.getJsonMapper();
 
-        return ws -> Threading.EXECUTOR.execute(() -> {
+        return ws -> EXECUTOR.execute(() -> {
             try {
                 var game = gameService.join(gameId, player);
                 if (game == null) {
                     // we can't join... so just send an error and then disconnect
-                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError("Invalid message type"));
+                    var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofError("Invalid message type"));
                     ws.send(jsonOutput);
                     ws.close();
                     return;
                 }
                 socketExchange.subscribe(gameId, ws);
                 // the joiner needs a snapshot of what the game actually looks like when joining!
-                var jsonResult = jsonMapper.writeValueAsString(OutputMsg.ofJoin(player, game));
+                var jsonResult = JSON_MAPPER.writeValueAsString(OutputMsg.ofJoin(player, game));
                 ws.send(jsonResult);
                 LOGGER.info(String.format("Player %s connected to game %s", player.getId(), gameId));
             } catch (Exception e) {
@@ -139,41 +133,40 @@ public class WsRouter extends Jooby {
     public WebSocket.OnMessage handleGameMessage(State state, String gameId, Player player) {
         var gameService = state.getGameService();
         var broadcastService = state.getBroadcaster();
-        var jsonMapper = state.getJsonMapper();
 
-        return (ws, message) -> Threading.EXECUTOR.execute(() -> {
+        return (ws, message) -> EXECUTOR.execute(() -> {
             try {
                 try {
                     LOGGER.info(String.format("Received message from player %s, %s on game %s", player.getId(), message.value(), gameId));
-                    var input = jsonMapper.readValue(message.value(), InputMsg.class);
+                    var input = JSON_MAPPER.readValue(message.value(), InputMsg.class);
                     var type = input.getType();
                     switch (type) {
                         // handle the message cases by serializing the json and broadcasting to all listening clients
                         case InputMsg.FORFEIT -> {
                             var game = gameService.forfeit(gameId, player);
-                            var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofForfeit(game));
+                            var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofForfeit(game));
                             broadcastService.broadcast(gameId, jsonOutput);
                         }
                         case InputMsg.MOVE -> {
                             var move = input.getMove();
                             var game = gameService.makeMove(gameId, player, move);
-                            var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofMove(game, move));
+                            var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofMove(game, move));
                             broadcastService.broadcast(gameId, jsonOutput);
                         }
                         // unknown messages involve sending an error back to the og sender
                         default -> {
                             var resp = OutputMsg.ofError("Invalid message type: %d" + type);
-                            var jsonOutput = jsonMapper.writeValueAsString(resp);
+                            var jsonOutput = JSON_MAPPER.writeValueAsString(resp);
                             ws.send(jsonOutput);
                         }
                     }
                 } catch (GameService.MoveException e) {
                     // handle an exceptional case that happens while attempting to make a move by sending an error back to og sender
-                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError(e.getMessage()));
+                    var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofError(e.getMessage()));
                     ws.send(jsonOutput);
                 } catch (Exception e) {
                     // handle any unknown error that happens during message processing by sending an error back to og sender
-                    var jsonOutput = jsonMapper.writeValueAsString(OutputMsg.ofError("An unexpected error has occurred"));
+                    var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofError("An unexpected error has occurred"));
                     ws.send(jsonOutput);
                     LOGGER.error("Unexpected error occurred in websocket message handler " + ExceptionUtils.getStackTrace(e));
                 }

@@ -4,7 +4,6 @@ import io.jooby.Jooby;
 import io.jooby.MediaType;
 import io.jooby.StatusCode;
 import models.HistEntity;
-import utils.Constants;
 
 public class PartialsRouter extends Jooby {
 
@@ -21,7 +20,7 @@ public class PartialsRouter extends Jooby {
         get("/partials/player-history", ctx -> {
             ctx.setResponseType(MediaType.HTML);
 
-            var userIdSlug = ctx.query("id");
+            var userIdSlug = ctx.query("userId");
             if (userIdSlug.isMissing()) {
                 ctx.setResponseCode(StatusCode.BAD_REQUEST_CODE);
                 return "";

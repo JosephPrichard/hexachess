@@ -70,17 +70,23 @@ public class UserDao {
 
         var sql = """
             BEGIN;
-            INSERT INTO
-                users (id, username, country, elo, highestElo, wins, losses, password, salt)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO users (id, username, country, elo, highestElo, wins, losses, password, salt)  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             UPDATE users_metadata SET count = count + 1 WHERE id = 1;
             END;""";
         try {
-            runner.execute(sql, inst.getNewId(), inst.getUsername(), inst.getCountry(),
-                inst.getElo(), inst.getElo(), inst.getWins(), inst.getLosses(),
-                hashedPassword, salt);
+            runner.execute(sql,
+                inst.getNewId(),
+                inst.getUsername(),
+                inst.getCountry(),
+                inst.getElo(),
+                inst.getElo(),
+                inst.getWins(),
+                inst.getLosses(),
+                hashedPassword,
+                salt);
         } catch (SQLException ex) {
-            if (Objects.equals(ex.getSQLState(), "23505")) {
+            var nextEx = ex.getNextException();
+            if ("23505".equals(nextEx.getSQLState())) {
                 // this is a constraint exception, which in this case means unique key constraint
                 throw new TakenUsernameException();
             }
@@ -122,19 +128,34 @@ public class UserDao {
         }
     }
 
-    public void update(String id, String username, String country) {
-        try {
-            var sql = "BEGIN; UPDATE users SET username = ?, country = ? WHERE id = ?; END";
-            runner.execute(sql, username, country, id);
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
+    public void update(String id, String newUsername, String newCountry, String newPassword) {
+        if (newUsername == null && newCountry == null && newPassword == null) {
+            return;
         }
-    }
 
-    public void updatePassword(String id, String password) {
+        var sql = new StringBuilder("BEGIN; UPDATE users SET "); // begin the query, we assume we have at least one field to set
+        List<Object> params = new ArrayList<>();
+
+        // append each SET for a non-null field to the query
+        if (newUsername != null) {
+            sql.append("username = ?,");
+            params.add(newUsername);
+        }
+        if (newCountry != null) {
+            sql.append("country = ?,");
+            params.add(newCountry);
+        }
+        if (newPassword != null) {
+            sql.append("password = ?,");
+            params.add(newPassword);
+        }
+        sql.deleteCharAt(sql.length() - 1); // remove the trailing comma from the SET fields
+
+        sql.append(" WHERE id = ?; END"); // end the query with the condition we set the uer for
+        params.add(id);
+
         try {
-            var sql = "BEGIN; UPDATE users SET password = ? WHERE id = ?; END";
-            runner.execute(sql, password, id);
+            runner.execute(sql.toString(), params.toArray());
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }

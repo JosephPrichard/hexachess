@@ -1,7 +1,6 @@
 package services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,23 +17,22 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import static utils.Globals.JSON_MAPPER;
 import static utils.Log.LOGGER;
 
 public class RemoteDict {
 
     private static final Random RANDOM = new Random();
     private final JedisPooled jedis;
-    private final ObjectMapper jsonMapper;
     private final ObjectReader playerReader;
 
     private static final String GAMES_ZSET = "games";
     private static final String LEADERBOARD_ZSET = "leaderboard";
     private static final Duration GAME_EXPIRE_FINISHED = Duration.ofHours(1);
 
-    public RemoteDict(JedisPooled jedis, ObjectMapper jsonMapper) {
+    public RemoteDict(JedisPooled jedis) {
         this.jedis = jedis;
-        this.jsonMapper = jsonMapper;
-        this.playerReader = jsonMapper.readerFor(Player.class);
+        this.playerReader = JSON_MAPPER.readerFor(Player.class);
     }
 
     public GameState getGame(String id) {
@@ -131,7 +129,7 @@ public class RemoteDict {
     public void setSession(String sessionId, Player player, long expirySeconds) {
         var fullId = "session:" + sessionId;
         try {
-            var str = jsonMapper.writeValueAsString(player);
+            var str = JSON_MAPPER.writeValueAsString(player);
             jedis.setex(fullId, expirySeconds, str);
         } catch (JsonProcessingException ex) {
             LOGGER.info("Failed to serialize an input json object to dictionary " + ex);

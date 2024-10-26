@@ -34,6 +34,7 @@ public class Templates {
         profileTemplate = handlebars.compile("/pages/profile");
         settingsTemplate = handlebars.compile("/pages/settings");
         currentGamesTemplate = handlebars.compile("/pages/currentGames");
+        gameHistoryTemplate = handlebars.compile("/pages/gameHistory");
         searchTemplate = handlebars.compile("/pages/searchPlayers");
         errorTemplate = handlebars.compile("/pages/error");
 

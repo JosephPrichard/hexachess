@@ -56,7 +56,7 @@ public class ChessGame {
     private List<PieceMoves> blackMoves = null;
 
     public ChessGame deepCopy() {
-        return new ChessGame(board != null ? board.copy() : null,
+        return new ChessGame(board != null ? board.deepCopy() : null,
             whiteMoves != null ? whiteMoves.stream().map(PieceMoves::deepCopy).toList() : null,
             blackMoves != null ? blackMoves.stream().map(PieceMoves::deepCopy).toList() : null);
     }
@@ -107,9 +107,13 @@ public class ChessGame {
     }
 
     public void makeMove(Move move) {
-        var piece = board.getPiece(move.getFrom());
-        board.setPiece(move.getFrom(), EMPTY);
-        board.setPiece(move.getTo(), piece);
+        makeMove(move.getFrom(), move.getTo());
+    }
+
+    public void makeMove(Hexagon from, Hexagon to) {
+        var piece = board.getPiece(from);
+        board.setPiece(from, EMPTY);
+        board.setPiece(to, piece);
         board.flipTurn();
 
         whiteMoves = null;

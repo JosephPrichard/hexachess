@@ -4,13 +4,14 @@
     <title>Profile - Hexachess</title>
     <link rel="stylesheet" href="/css/index.css">
     <script>
-        async function getUserHistories(id, afterId) {
-            const url =`/partials/player-history?id=${id}&afterId=${afterId}`;
+        async function getUserHistories(userId, afterId) {
+            const url =`/partials/player-history?userId=${userId}&afterId=${afterId}`;
             try {
                 const resp = await fetch(url, { method: 'GET' });
-                return [await resp.text(), resp];
+                return [await resp.text(), resp.ok];
             } catch (ex) {
                 console.error(ex);
+                return ["", false];
             }
         }
 
@@ -25,9 +26,9 @@
             if (!hasMoreRecords || !isAtPageBottom) {
                 return;
             }
-            getUserHistories('{{user.id}}', table.lastElementChild.id)
-                .then(([html, resp]) => {
-                    if (resp.ok) {
+            getUserHistories('{{user.id}}', table.lastElementChild.getAttribute("data-id"))
+                .then(([html, ok]) => {
+                    if (ok) {
                         table.insertAdjacentHTML('beforeend', html);
                     } else {
                         hasMoreRecords = false;

@@ -2,15 +2,11 @@ package models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import domain.ChessGame;
-import domain.Hexagon;
 import domain.Move;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -21,14 +17,13 @@ public class GameState {
     Player whitePlayer = null;
     Player blackPlayer = null;
     boolean isEnded;
-
     @JsonIgnore
     Boolean isFirstPlayerWhite = null; // true - first player joining should be white... false - first player joining should be black... null - random...
     @EqualsAndHashCode.Exclude
     @JsonIgnore
     double touch;
     @JsonIgnore
-    List<Move> moveHistory;
+    GameHist history;
 
     public GameState deepCopy() {
         return new GameState(id,
@@ -38,19 +33,17 @@ public class GameState {
             isEnded,
             isFirstPlayerWhite,
             touch,
-            moveHistory.stream().map(Move::deepCopy).toList());
-    }
-
-    public static GameState start(String id) {
-        return new GameState(id, null, null, null, false, null, 0, new ArrayList<>());
+            history != null ? history.deepCopy() : null);
     }
 
     public static GameState startWithGame(String id) {
-        return new GameState(id, ChessGame.start(), null, null, false, null, 0, new ArrayList<>());
+        var game = ChessGame.start();
+        var history = GameHist.start(game.getBoard());
+        return new GameState(id, game, null, null, false, null, 0, history);
     }
 
     public static GameState ofPlayers(Player whitePlayer, Player blackPlayer) {
-        return new GameState("", null, whitePlayer, blackPlayer, false, null, 0, new ArrayList<>());
+        return new GameState("", null, whitePlayer, blackPlayer, false, null, 0, null);
     }
 
     public Player getCurrPlayer() {
@@ -66,6 +59,23 @@ public class GameState {
     }
 
     public void pushMoveHistory(Move move) {
-        moveHistory.add(move);
+        history.getMoveList().add(move);
+    }
+
+    public GameState applyRandomSequence(int count) {
+        for (int i = 0; i < count; i++) {
+            game.initPieceMoves();
+
+            var currMoves = game.getCurrMoves();
+
+            var pm = currMoves.stream().filter((x) -> !x.getMoves().isEmpty()).findFirst().orElseThrow(); // we're going to assume there is at least one piece
+            var from = pm.getHex();
+            var to = pm.getMoves().get(0); // make the first move (we already know there is at least one)
+
+            var move = new Move(from, to);
+            game.makeMove(move);
+            history.getMoveList().add(move);
+        }
+        return this;
     }
 }

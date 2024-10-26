@@ -24,6 +24,12 @@
             const usernameElem = document.getElementById("username-register");
             const passwordElem = document.getElementById("password-register");
             const dupPasswordElem = document.getElementById("password-retype-register");
+            const submitElem = document.getElementById("register-form-submit");
+
+            submitElem.innerHTML = `<div class="loader"></div`;
+            function onResponse() {
+                submitElem.innerHTML = "Register";
+            }
 
             postLogin(usernameElem.value, passwordElem.value, dupPasswordElem.value)
                 .then(([object, ok]) => {
@@ -39,7 +45,10 @@
                         messageElem.innerText = object.message;
                         messageElem.className = "red-color";
                     }
-                });
+
+                    onResponse();
+                })
+                .catch(onResponse);
 
             // used to prevent the form onsubmit event this is invoked within from refreshing the page
             return false;
@@ -53,14 +62,16 @@
         Register
     </div>
     <div style="width: 500px">
-        <form id="register-form" class="form-wrapper" onsubmit="return onSignUp()">
+        <form id="register-form" class="form-wrapper" onsubmit="return onSignUp();">
             <label for="username-register" style="font-size: 17px">Username</label>
             <input id="username-register" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
             <label for="password-register" style="font-size: 17px">Password</label>
             <input id="password-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
             <label for="password-retype-register" style="font-size: 17px">Confirm Password</label>
             <input id="password-retype-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
-            <input class="button-grey" type="submit" value="Register" />
+            <button id="register-form-submit" class="button-grey" type="submit">
+                Register
+            </button>
             <div id="register-form-message" style="margin-top: 20px"></div>
         </form>
     </div>

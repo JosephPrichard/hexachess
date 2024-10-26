@@ -37,7 +37,7 @@ public class WsRouterTest {
         redisServer = new RedisServer(6379);
         redisServer.start();
         jedis = new JedisPooled("localhost", 6379);
-        remoteDict = new RemoteDict(jedis, new JsonMapper());
+        remoteDict = new RemoteDict(jedis);
     }
 
     @BeforeEach
@@ -114,7 +114,7 @@ public class WsRouterTest {
 
         var broadcaster = new LocalBroadcaster();
 
-        var gameService = new GameService(remoteDict, null, null);
+        var gameService = new GameService(remoteDict, null, null); // we're only using one of these deps
         var gameId = gameService.create(true); // first player joining will be white
 
         state.setBroadcaster(broadcaster);

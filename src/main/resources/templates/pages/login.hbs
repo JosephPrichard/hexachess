@@ -22,6 +22,12 @@
         function onLogin() {
             const usernameElem = document.getElementById("username-login");
             const passwordElem = document.getElementById("password-login");
+            const submitElem = document.getElementById("login-form-submit");
+
+            submitElem.innerHTML = `<div class="loader"></div`;
+            function onResponse() {
+                submitElem.innerHTML = "Login";
+            }
 
             postLogin(usernameElem.value, passwordElem.value)
                 .then(([object, ok]) => {
@@ -38,7 +44,10 @@
                         messageElem.innerText = object.message;
                         messageElem.className = "red-color";
                     }
-                });
+
+                    onResponse();
+                })
+                .catch(onResponse);
 
             // used to prevent the form onsubmit event this is invoked within from refreshing the page
             return false;
@@ -57,7 +66,9 @@
             <input id="username-login" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
             <label for="password-login" style="font-size: 17px">Password</label>
             <input id="password-login" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
-            <input id="login-form-submit" class="button-grey" type="submit" value="Login"/>
+            <button id="login-form-submit" class="button-grey" type="submit">
+                Login
+            </button>
             <div style="margin-top: 20px;">
                 Don't have an account? Register <a href="/register" style="color: cornflowerblue;"> here! </a>
             </div>

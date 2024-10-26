@@ -27,7 +27,7 @@ CREATE TABLE game_histories (
     whiteId VARCHAR NOT NULL,
     blackId VARCHAR NOT NULL,
     result INTEGER NOT NULL,
-    data BYTEA NOT NULL,
+    data JSON NOT NULL,
     playedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     winElo NUMERIC,
     loseElo NUMERIC);

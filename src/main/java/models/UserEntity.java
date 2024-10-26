@@ -5,13 +5,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
-import utils.Constants;
+import utils.Globals;
 import utils.Html;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -63,11 +61,11 @@ public class UserEntity {
     public String getWinRateColor() {
         var winRate = getWinRate();
         if (winRate > 50) {
-            return Constants.GREEN_COLOR;
+            return Globals.GREEN_COLOR;
         } else if (winRate < 50) {
-            return Constants.RED_COLOR;
+            return Globals.RED_COLOR;
         } else {
-            return Constants.YELLOW_COLOR;
+            return Globals.YELLOW_COLOR;
         }
     }
 

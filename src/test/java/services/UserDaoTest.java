@@ -93,8 +93,8 @@ public class UserDaoTest {
         createTestData(userDao);
 
         // when
-        userDao.update("id1", "user1-changed", "us");
-        userDao.update("id2", "user2-changed", "eu");
+        userDao.update("id1", "user1-changed", null, null);
+        userDao.update("id2", "user2-changed", "eu", null);
 
         var actualUsers1 = userDao.getById("id1");
         var actualUsers2 = userDao.getById("id2");

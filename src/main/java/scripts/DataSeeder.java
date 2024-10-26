@@ -1,16 +1,18 @@
 package scripts;
 
 import lombok.AllArgsConstructor;
+import models.GameHist;
 import org.apache.commons.dbutils.QueryRunner;
 import services.HistoryDao;
 import services.RemoteDict;
 import services.UserDao;
 import utils.Config;
-import utils.Threading;
 
 import javax.sql.DataSource;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+import static utils.Globals.EXECUTOR;
 import static utils.Log.LOGGER;
 
 @AllArgsConstructor
@@ -68,127 +70,106 @@ public class DataSeeder {
         new UserDao.UserInst("id46", "mike_tyson", "password46", "eu", 1420f, 8, 5));
 
     private static final List<HistoryDao.HistoryInst> HISTORY_INSTS = List.of(
-        new HistoryDao.HistoryInst("id37", "id5", 1, new byte[]{}, 15d, -15d),
-        new HistoryDao.HistoryInst("id2", "id27", 0, new byte[]{}, 10d, -10d),
-        new HistoryDao.HistoryInst("id4", "id19", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id12", "id32", 1, new byte[]{}, 20d, -20d),
-        new HistoryDao.HistoryInst("id29", "id8", 0, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id14", "id23", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id30", "id10", 1, new byte[]{}, 18d, -18d),
-        new HistoryDao.HistoryInst("id7", "id33", 0, new byte[]{}, 23d, -23d),
-        new HistoryDao.HistoryInst("id21", "id25", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id9", "id11", 1, new byte[]{}, 16d, -16d),
-        new HistoryDao.HistoryInst("id1", "id18", 0, new byte[]{}, 28d, -28d),
-        new HistoryDao.HistoryInst("id24", "id6", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id15", "id20", 1, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id35", "id31", 0, new byte[]{}, 25d, -25d),
-        new HistoryDao.HistoryInst("id26", "id3", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id28", "id17", 1, new byte[]{}, 11d, -11d),
-        new HistoryDao.HistoryInst("id13", "id16", 0, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id3", "id34", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id11", "id22", 1, new byte[]{}, 13d, -13d),
-        new HistoryDao.HistoryInst("id34", "id38", 0, new byte[]{}, 27d, -27d),
-        new HistoryDao.HistoryInst("id36", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id31", "id7", 1, new byte[]{}, 19d, -19d),
-        new HistoryDao.HistoryInst("id39", "id10", 0, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id22", "id4", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id20", "id15", 1, new byte[]{}, 27d, -27d),
-        new HistoryDao.HistoryInst("id8", "id14", 0, new byte[]{}, 18d, -18d),
-        new HistoryDao.HistoryInst("id18", "id9", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id5", "id13", 1, new byte[]{}, 24d, -24d),
-        new HistoryDao.HistoryInst("id16", "id30", 0, new byte[]{}, 25d, -25d),
-        new HistoryDao.HistoryInst("id33", "id19", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id24", "id7", 1, new byte[]{}, 28d, -28d),
-        new HistoryDao.HistoryInst("id6", "id21", 0, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id8", "id2", 1, new byte[]{}, 19d, -19d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 15d, -15d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 10d, -10d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 20d, -20d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 18d, -18d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 23d, -23d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 16d, -16d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 28d, -28d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 25d, -25d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 11d, -11d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 13d, -13d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 27d, -27d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 15d, -15d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 10d, -10d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 20d, -20d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 18d, -18d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 23d, -23d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 16d, -16d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 28d, -28d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 25d, -25d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 11d, -11d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 13d, -13d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 27d, -27d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 24d, -24d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 19d, -19d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 26d, -26d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 21d, -21d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 28d, -28d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 15d, -15d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 12d, -12d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 18d, -18d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 23d, -23d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 17d, -17d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 27d, -27d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 20d, -20d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 14d, -14d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 29d, -29d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 22d, -22d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 16d, -16d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 25d, -25d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 24d, -24d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id2", "id1", 1, new byte[]{}, 30d, -30d),
-        new HistoryDao.HistoryInst("id1", "id2", 0, new byte[]{}, 21d, -21d),
-        new HistoryDao.HistoryInst("id2", "id1", 2, new byte[]{}, 0d, 0d),
-        new HistoryDao.HistoryInst("id1", "id2", 1, new byte[]{}, 19d, -19d),
-        new HistoryDao.HistoryInst("id2", "id1", 0, new byte[]{}, 13d, -13d),
-        new HistoryDao.HistoryInst("id1", "id2", 2, new byte[]{}, 0d, 0d));
+        new HistoryDao.HistoryInst("id37", "id5", 1, 15d, -15d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id27", 0, 10d, -10d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id4", "id19", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id12", "id32", 1, 20d, -20d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id29", "id8", 0, 30d, -30d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id14", "id23", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id30", "id10", 1, 18d, -18d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id7", "id33", 0, 23d, -23d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id21", "id25", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id9", "id11", 1, 16d, -16d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id18", 0, 28d, -28d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id24", "id6", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id15", "id20", 1, 30d, -30d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id35", "id31", 0, 25d, -25d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id26", "id3", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id28", "id17", 1, 11d, -11d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id13", "id16", 0, 22d, -22d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id3", "id34", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id11", "id22", 1, 13d, -13d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id34", "id38", 0, 27d, -27d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id36", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id31", "id7", 1, 19d, -19d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id39", "id10", 0, 22d, -22d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id22", "id4", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id20", "id15", 1, 27d, -27d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id8", "id14", 0, 18d, -18d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id18", "id9", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id5", "id13", 1, 24d, -24d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id16", "id30", 0, 25d, -25d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id33", "id19", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id24", "id7", 1, 28d, -28d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id6", "id21", 0, 22d, -22d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id8", "id2", 1, 19d, -19d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 15d, -15d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 10d, -10d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 20d, -20d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 30d, -30d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 18d, -18d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 23d, -23d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 16d, -16d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 28d, -28d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 30d, -30d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 25d, -25d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 11d, -11d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 22d, -22d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 13d, -13d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 27d, -27d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 24d, -24d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 19d, -19d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 26d, -26d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 21d, -21d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 28d, -28d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 15d, -15d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 12d, -12d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 18d, -18d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 23d, -23d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 17d, -17d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 1, 27d, -27d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 0, 20d, -20d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 2, 0d, 0d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id1", "id2", 1, 14d, -14d, GameHist.randomAsJson()),
+        new HistoryDao.HistoryInst("id2", "id1", 0, 30d, -30d, GameHist.randomAsJson()));
 
     private void seedUsersTable(List<UserDao.UserInst> insts) {
         var userDao = new UserDao(ds);
         var futures = insts.stream()
-            .map((inst) -> Threading.EXECUTOR.submit(() -> userDao.insert(inst)))
+            .map((inst) -> EXECUTOR.submit(() -> userDao.insert(inst)))
             .toList();
-        futures.forEach(Threading::getQuietly);
+        futures.forEach((f) -> {
+            try {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void seedHistTable(List<HistoryDao.HistoryInst> insts) {
         var userDao = new HistoryDao(ds);
         var futures = insts.stream()
-            .map((inst) -> Threading.EXECUTOR.submit(() -> userDao.insert(inst)))
+            .map((inst) -> EXECUTOR.submit(() -> userDao.insert(inst)))
             .toList();
-        futures.forEach(Threading::getQuietly);
+        futures.forEach((f) -> {
+            try {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void seedUsersDict() {
