@@ -3,12 +3,11 @@ package web;
 import io.jooby.Jooby;
 import io.jooby.MediaType;
 import io.jooby.StatusCode;
-import models.HistEntity;
+import models.HistoryEntity;
 
 public class PartialsRouter extends Jooby {
 
     public PartialsRouter(State state) {
-        var userDao = state.getUserDao();
         var historyDao = state.getHistoryDao();
         var templates = state.getTemplates();
 
@@ -34,7 +33,7 @@ public class PartialsRouter extends Jooby {
                 return "";
             }
 
-            historyList.forEach(HistEntity::sanitize);
+            historyList.forEach(HistoryEntity::sanitize);
 
             var template = templates.getHistoryListTemplate();
             return template.apply(historyList);

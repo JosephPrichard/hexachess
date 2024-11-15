@@ -1,32 +1,24 @@
 package services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import domain.Hexagon;
-import domain.Move;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import models.GameState;
-import models.HistEntity;
+import models.HistoryEntity;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
-import utils.Globals;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import static utils.Globals.JSON_MAPPER;
+import static utils.Log.LOGGER;
 
 public class HistoryDao {
 
-    private static final ResultSetHandler<HistEntity> HIST_MAPPER = new BeanHandler<>(HistEntity.class);
-    private static final ResultSetHandler<List<HistEntity>> HIST_LIST_MAPPER = new BeanListHandler<>(HistEntity.class);
+    private static final ResultSetHandler<HistoryEntity> HIST_MAPPER = new BeanHandler<>(HistoryEntity.class);
+    private static final ResultSetHandler<List<HistoryEntity>> HIST_LIST_MAPPER = new BeanListHandler<>(HistoryEntity.class);
 
     private final QueryRunner runner;
 
@@ -45,29 +37,26 @@ public class HistoryDao {
         String data;
     }
 
-    public void insert(HistoryInst historyInst) {
-        insert(
-            historyInst.getWhiteId(),
-            historyInst.getBlackId(),
-            historyInst.getResult(),
-            historyInst.getWinEloDiff(),
-            historyInst.getLoseEloDiff(),
-            historyInst.getData());
+    public void insert(String whiteId, String blackId, int result, double winEloDiff, double loseEloDiff, String data) {
+        insert(new HistoryInst(whiteId, blackId, result, winEloDiff, loseEloDiff, data));
     }
 
-    public void insert(String whiteId, String blackId, int result, double winEloDiff, double loseEloDiff, String data) {
+    public void insert(HistoryInst historyInst) {
         var sql = """
             BEGIN;
             INSERT INTO game_histories (whiteId, blackId, result, data, winElo, loseElo) VALUES (?, ?, ?, ? ::json, ?, ?);
             END""";
         try {
-            runner.execute(sql, whiteId, blackId, result, data, winEloDiff, loseEloDiff);
+            runner.execute(sql, historyInst.whiteId, historyInst.blackId,
+                historyInst.result, historyInst.data, historyInst.winEloDiff, historyInst.loseEloDiff);
+            LOGGER.info(String.format("Successfully inserted a history=%s", historyInst));
         } catch (SQLException ex) {
+            LOGGER.error(String.format("Failed to insert a history=%s", historyInst));
             throw new RuntimeException(ex);
         }
     }
 
-    public HistEntity getHistory(long id) {
+    public HistoryEntity getHistory(long id) {
         var sql = """
             SELECT
                 h1.id,
@@ -87,13 +76,16 @@ public class HistoryDao {
             INNER JOIN users as u2 ON u2.id = h1.blackId
             WHERE h1.id = ?""";
         try {
-            return runner.query(sql, HIST_MAPPER, id);
+            var results = runner.query(sql, HIST_MAPPER, id);
+            LOGGER.info(String.format("Successfully selected history for id=%s", id));
+            return results;
         } catch (SQLException ex) {
+            LOGGER.error(String.format("Failed to select history for id=%s", id));
             throw new RuntimeException(ex);
         }
     }
 
-    public List<HistEntity> getUserHistories(String userId, Long afterId, int perPage) {
+    public List<HistoryEntity> getUserHistories(String userId, Long afterId, int perPage) {
         if (userId == null) {
             throw new RuntimeException("Expected userId to be non null");
         }
@@ -128,8 +120,11 @@ public class HistoryDao {
         params.add(perPage);
 
         try {
-            return runner.query(sql, HIST_LIST_MAPPER, params.toArray());
+            var results = runner.query(sql, HIST_LIST_MAPPER, params.toArray());
+            LOGGER.info(String.format("Successfully selected user histories page for userId=%s, afterId=%s", userId, afterId));
+            return results;
         } catch (SQLException ex) {
+            LOGGER.info(String.format("Failed to select user histories page for userId=%s, afterId=%s", userId, afterId));
             throw new RuntimeException(ex);
         }
     }

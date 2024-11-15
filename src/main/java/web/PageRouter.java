@@ -6,7 +6,7 @@ import io.jooby.Route;
 import io.jooby.StatusCode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import models.HistEntity;
+import models.HistoryEntity;
 import models.Pagination;
 import models.UserEntity;
 
@@ -28,7 +28,7 @@ public class PageRouter extends Jooby {
     @AllArgsConstructor
     public static class ProfileView {
         UserEntity user;
-        List<HistEntity> historyList;
+        List<HistoryEntity> historyList;
     }
 
     @Data
@@ -169,7 +169,7 @@ public class PageRouter extends Jooby {
             var historyList = historyListFut.get();
 
             userEntity.sanitize();
-            historyList.forEach(HistEntity::sanitize);
+            historyList.forEach(HistoryEntity::sanitize);
 
             var template = templates.getProfileTemplate();
             return template.apply(new ProfileView(userEntity, historyList));
