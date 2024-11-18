@@ -27,7 +27,7 @@ public class Templates {
 
     public Templates(Handlebars handlebars) throws IOException {
         // pages
-        indexTemplate =  handlebars.compile("/pages/index");
+        indexTemplate = handlebars.compile("/pages/index");
         registerTemplate = handlebars.compile("/pages/register");
         loginTemplate = handlebars.compile("/pages/login");
         leaderboardTemplate = handlebars.compile("/pages/leaderboard");

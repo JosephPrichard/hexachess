@@ -70,7 +70,7 @@ public class GameState {
 
             var pm = currMoves.stream().filter((x) -> !x.getMoves().isEmpty()).findFirst().orElseThrow(); // we're going to assume there is at least one piece
             var from = pm.getHex();
-            var to = pm.getMoves().get(0); // make the first move (we already know there is at least one)
+            var to = pm.getMoves().getFirst(); // make the first move (we already know there is at least one)
 
             var move = new Move(from, to);
             game.makeMove(move);

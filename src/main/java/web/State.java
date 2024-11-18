@@ -1,8 +1,5 @@
 package web;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;

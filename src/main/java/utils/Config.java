@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class Config {
 
@@ -44,6 +44,7 @@ public class Config {
         }
         return envMap;
     }
+
     public static HikariDataSource createDataSource(Map<String, String> envMap) {
         var dbUrl = envMap.get("DB_URL");
         var dbUser = envMap.get("DB_USER");
@@ -73,13 +74,13 @@ public class Config {
                             files.put(filePath.getFileName().toString(), inputStream.readAllBytes());
                         }
                     } catch (IOException ex) {
-                        LOGGER.error("Error occurred while stepping through files " + ex);
+                        LOGGER.error("Error occurred while stepping through files {}", String.valueOf(ex));
                         throw new RuntimeException(ex);
                     }
                 });
             }
         } catch (URISyntaxException | IOException ex) {
-            LOGGER.error("Error occurred while creating files map " + ex);
+            LOGGER.error("Error occurred while creating files map {}", String.valueOf(ex));
             throw new RuntimeException(ex);
         }
 
@@ -95,7 +96,7 @@ public class Config {
             var sql = new String(inputStream.readAllBytes());
             runner.update(sql);
         } catch (SQLException | IOException ex) {
-            LOGGER.error("Error occurred while creating schema " + ex);
+            LOGGER.error("Error occurred while executing query {}", String.valueOf(ex));
             throw new RuntimeException(ex);
         }
     }
@@ -106,7 +107,7 @@ public class Config {
             runner.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
             executeQuery(runner, "database/schema.sql");
         } catch (SQLException ex) {
-            LOGGER.error("Error occurred while creating schema " + ex);
+            LOGGER.error("Error occurred while creating schema {}", String.valueOf(ex));
             throw new RuntimeException(ex);
         }
     }

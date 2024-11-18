@@ -96,7 +96,7 @@ public class PageRouter extends Jooby {
 
         // this route is un-cacheable due to using cookies
         get("/settings", ctx -> {
-            var cookieStr =  ctx.header("Cookie").valueOrNull();
+            var cookieStr = ctx.header("Cookie").valueOrNull();
 
             var session = sessionService.getSession(cookieStr);
             if (session == null) {

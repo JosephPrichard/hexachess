@@ -18,7 +18,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static utils.Globals.JSON_MAPPER;
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class RemoteDict {
 
@@ -95,7 +95,7 @@ public class RemoteDict {
         // discard the last element, if we know for sure we over fetched, and use it as the next cursor
         Double nextCursor = null;
         if (tuples.size() >= count + 1) {
-            nextCursor = tuples.remove(tuples.size() - 1).getScore();
+            nextCursor = tuples.removeLast().getScore();
         }
 
         byte[][] fullIds = new byte[tuples.size()][];
@@ -121,7 +121,7 @@ public class RemoteDict {
         try {
             return playerReader.readValue(str, Player.class);
         } catch (IOException ex) {
-            LOGGER.info("Failed to parse json object from the dictionary " + ex);
+            LOGGER.info("Failed to parse json object from the dictionary {}", String.valueOf(ex));
             return null;
         }
     }
@@ -132,7 +132,7 @@ public class RemoteDict {
             var str = JSON_MAPPER.writeValueAsString(player);
             jedis.setex(fullId, expirySeconds, str);
         } catch (JsonProcessingException ex) {
-            LOGGER.info("Failed to serialize an input json object to dictionary " + ex);
+            LOGGER.info("Failed to serialize an input json object to dictionary {}", String.valueOf(ex));
         }
     }
 

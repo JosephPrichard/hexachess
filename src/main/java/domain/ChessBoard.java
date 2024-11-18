@@ -72,6 +72,7 @@ public class ChessBoard {
     }
 
     public ChessBoard deepCopy() {
+        assert pieces != null;
         return new ChessBoard(turn,
             Arrays.stream(pieces).map(byte[]::clone).toArray(byte[][]::new));
     }
@@ -139,10 +140,12 @@ public class ChessBoard {
     }
 
     public void setPiece(int file, int rank, byte piece) {
+        assert pieces != null;
         pieces[file][rank] = piece;
     }
 
     public byte getPiece(int file, int rank) {
+        assert pieces != null;
         return pieces[file][rank];
     }
 
@@ -195,7 +198,9 @@ public class ChessBoard {
     }
 
     public boolean inBounds(int file, int rank) {
-        return file >= 0 && file < FILES && rank >= 0 && rank < pieces[file].length;
+        if (file < 0 || file >= FILES || rank < 0) return false;
+        assert pieces != null;
+        return rank < pieces[file].length;
     }
 
     public boolean inBounds(Hexagon hex) {

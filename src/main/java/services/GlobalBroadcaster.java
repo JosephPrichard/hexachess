@@ -9,7 +9,7 @@ import redis.clients.jedis.JedisPubSub;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class GlobalBroadcaster implements Broadcaster {
 
@@ -44,7 +44,7 @@ public class GlobalBroadcaster implements Broadcaster {
     public void broadcast(String id, String content) {
         var message = id + FIELD_SPLIT + content;
         jedis.publish(CHANNEL_NAME, message);
-        LOGGER.info(String.format("Broadcast global to id: %s, message: %s", id, message));
+        LOGGER.info("Broadcast global to id: {}, message: {}", id, message);
     }
 
     public JedisPubSub startListenSubscribe() throws ExecutionException, InterruptedException {
@@ -54,7 +54,7 @@ public class GlobalBroadcaster implements Broadcaster {
                 @Override
                 public void onSubscribe(String channel, int subscribedChannels) {
                     super.onSubscribe(channel, subscribedChannels);
-                    LOGGER.info(String.format("Started the subscriber listener for broadcast instance: %s", this));
+                    LOGGER.info("Started the subscriber listener for broadcast instance: {}", this);
                     futureSubscriber.complete(this);
                 }
 
@@ -64,12 +64,12 @@ public class GlobalBroadcaster implements Broadcaster {
                         super.onMessage(channel, message);
                         var index = message.indexOf(FIELD_SPLIT);
                         if (index == -1) {
-                            LOGGER.error(String.format("Invalid message format: %s", message));
+                            LOGGER.error("Invalid message format: {}", message);
                             return;
                         }
                         localBroadcaster.broadcast(message.substring(0, index), message.substring(index + 1));
                     } catch (Exception ex) {
-                        LOGGER.error("Error occurred in subscriber thread " + ex);
+                        LOGGER.error("Error occurred in subscriber thread {}", String.valueOf(ex));
                     }
                 }
             };

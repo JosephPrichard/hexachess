@@ -35,7 +35,7 @@ public class Pagination {
         }
         return new Pagination(pages,
             targetPage > 1 ? createURL(baseUrl, targetPage - 1) : null,
-            targetPage < totalPages? createURL(baseUrl, targetPage + 1) : null);
+            targetPage < totalPages ? createURL(baseUrl, targetPage + 1) : null);
     }
 
     public static Pagination ofUnlimited(String baseUrl, int page) {

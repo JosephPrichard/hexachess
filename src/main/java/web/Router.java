@@ -3,13 +3,12 @@ package web;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import io.jooby.Jooby;
+import io.jooby.exception.NotFoundException;
 import io.jooby.jackson.JacksonModule;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import redis.clients.jedis.JedisPooled;
 import utils.Config;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class Router extends Jooby {
 
@@ -33,7 +32,7 @@ public class Router extends Jooby {
 //            var state = new State(null, null, null);
             return new Router(state);
         } catch (Exception ex) {
-            LOGGER.error("Error occurred during router init " + ex);
+            LOGGER.error("Error occurred during router init {}", String.valueOf(ex));
             throw new RuntimeException(ex);
         }
     }
@@ -43,7 +42,7 @@ public class Router extends Jooby {
             ctx.setResponseCode(statusCode);
             if (statusCode.value() == 500) {
                 // internal server errors contain stack traces, so log them out to server but do not end to client
-                LOGGER.error("Error: " + statusCode + " ", cause);
+                LOGGER.error("Error: {} ", statusCode, cause);
                 ctx.send("Internal Server Error");
             } else {
                 // non 500 errors contain clear messages that can be spit out as strings to both server logs and the client
@@ -55,7 +54,26 @@ public class Router extends Jooby {
 
         install(new JacksonModule());
 
-        mount(new FileRouter(state));
+        // adding the files to the router
+        var filesMap = state.getFiles();
+
+        assets("/css/index.css", "/css/index.css");
+
+        assets("/scripts/chess.js", "/scripts/chess.js");
+
+        assets("/scripts/session.js", "/scripts/session.js");
+
+        get("/files/flags/{name}", ctx -> {
+            ctx.setResponseType("image/png");
+
+            var name = ctx.path("name").toOptional().orElse("");
+            var fileBytes = filesMap.get(name);
+            if (fileBytes == null) {
+                throw new NotFoundException("The requested file does not exist: " + name);
+            }
+            return fileBytes;
+        });
+
         mount(new PageRouter(state));
         mount(new PartialsRouter(state));
         mount(new FormRouter(state));

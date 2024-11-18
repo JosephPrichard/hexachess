@@ -17,8 +17,8 @@ Created using Java, Javascript, Jooby, Handlebars, Postgres, and Redis.
 
 `docker run -d --name postgres -p 5432:5432 postgres`
 
-### Build Server
-
-``
-
 ### Run Server
+
+`mvn clean install package`
+
+`java -cp target/Hexchess-1.0-SNAPSHOT.jar Main`

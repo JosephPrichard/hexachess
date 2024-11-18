@@ -6,10 +6,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jsoup.Jsoup;
 import utils.Globals;
-import utils.Html;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
+
+import static utils.Globals.HTML_SAFELIST;
 
 @Data
 @NoArgsConstructor
@@ -90,9 +91,9 @@ public class HistoryEntity {
     }
 
     public void sanitize() {
-        whiteName = Jsoup.clean(whiteName, Html.SAFELIST);
-        blackName = Jsoup.clean(blackName, Html.SAFELIST);
-        whiteCountry = Jsoup.clean(whiteCountry, Html.SAFELIST);
-        blackCountry = Jsoup.clean(blackCountry, Html.SAFELIST);
+        whiteName = Jsoup.clean(whiteName, HTML_SAFELIST);
+        blackName = Jsoup.clean(blackName, HTML_SAFELIST);
+        whiteCountry = Jsoup.clean(whiteCountry, HTML_SAFELIST);
+        blackCountry = Jsoup.clean(blackCountry, HTML_SAFELIST);
     }
 }

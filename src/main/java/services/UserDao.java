@@ -17,10 +17,13 @@ import javax.sql.DataSource;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class UserDao {
 
@@ -86,9 +89,9 @@ public class UserDao {
                 inst.getLosses(),
                 hashedPassword,
                 salt);
-            LOGGER.info(String.format("Successfully inserted user=%s", inst));
+            LOGGER.info("Successfully inserted user={}", inst);
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to insert user=%s", inst), ex);
+            LOGGER.error("Failed to insert user={}", inst, ex);
             var nextEx = ex.getNextException();
             if ("23505".equals(nextEx.getSQLState())) {
                 throw new TakenUsernameException();
@@ -111,7 +114,7 @@ public class UserDao {
             rs = stmt.executeQuery();
 
             if (!rs.next()) {
-                LOGGER.warn(String.format("No user found with username=%s", username));
+                LOGGER.warn("No user found with username={}", username);
                 return null;
             }
             var salt = rs.getString("salt");
@@ -121,10 +124,10 @@ public class UserDao {
 
             var saltedPassword = inputPassword + salt;
             var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), password);
-            LOGGER.info(String.format("Password verification %s for username=%s", result.verified ? "successful" : "failed", usernameOut));
+            LOGGER.info("Password verification {} for username={}", result.verified ? "successful" : "failed", usernameOut);
             return result.verified ? new Player(id, usernameOut) : null;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to select user credentials for user=%s", username), ex);
+            LOGGER.error("Failed to select user credentials for user={}", username, ex);
             DbUtils.rollbackAndCloseQuietly(conn);
             throw new RuntimeException(ex);
         } finally {
@@ -161,9 +164,9 @@ public class UserDao {
 
         try {
             runner.execute(sql.toString(), params.toArray());
-            LOGGER.info(String.format("Successfully updated user with id=%s", id));
+            LOGGER.info("Successfully updated user with id={}", id);
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to update user with id=%s", id), ex);
+            LOGGER.error("Failed to update user with id={}", id, ex);
             throw new RuntimeException(ex);
         }
     }
@@ -199,10 +202,10 @@ public class UserDao {
             double winEloDiff = stmt.getBigDecimal(3).doubleValue();
             double loseEloDiff = stmt.getBigDecimal(4).doubleValue();
 
-            LOGGER.info(String.format("Updated stats: winId=%s, loseId=%s, winEloDiff=%.2f, loseEloDiff=%.2f", winId, loseId, winEloDiff, loseEloDiff));
+            LOGGER.info("Successfully updated stats: winId={} loseId={}, winEloDiff={}, loseEloDiff={}", winId, loseId, winEloDiff, loseEloDiff);
             return new EloChangeSet(winEloDiff, loseEloDiff);
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to update stats for winId=%s, loseId=%s", winId, loseId), ex);
+            LOGGER.error("Failed to update stats for winId={}, loseId={}", winId, loseId, ex);
             DbUtils.rollbackAndCloseQuietly(conn);
             throw new RuntimeException(ex);
         } finally {
@@ -218,10 +221,10 @@ public class UserDao {
             WHERE id = ?""";
         try {
             var user = runner.query(sql, USER_MAPPER, id);
-            LOGGER.info(String.format("Successfully fetched user by id=%s", id));
+            LOGGER.info("Successfully fetched user by id={}", id);
             return user;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to fetch user by id=%s", id), ex);
+            LOGGER.error("Failed to fetch user by id={}", id, ex);
             throw new RuntimeException(ex);
         }
     }
@@ -234,10 +237,10 @@ public class UserDao {
             WHERE u1.id = ?""";
         try {
             var user = runner.query(sql, USER_MAPPER, id);
-            LOGGER.info(String.format("Successfully fetched user with rank by id=%s", id));
+            LOGGER.info("Successfully fetched user with rank by id={}", id);
             return user;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to fetch user with rank by id=%s", id), ex);
+            LOGGER.error("Failed to fetch user with rank by id={}", id, ex);
             throw new RuntimeException(ex);
         }
     }
@@ -251,15 +254,15 @@ public class UserDao {
             SELECT id, username, country, elo, wins, losses
             FROM users
             WHERE 1 = 1 AND"""
-              + ids.stream().map(x -> "?").collect(Collectors.joining(",", " id IN (", ") "));
+            + ids.stream().map(x -> "?").collect(Collectors.joining(",", " id IN (", ") "));
 
         var idsStr = ids.stream().collect(Collectors.joining(",", "[", "]"));
         try {
             var results = runner.query(sql, USER_LIST_MAPPER, ids.toArray());
-            LOGGER.info(String.format("Successfully selected users by ids=%s", idsStr));
+            LOGGER.info("Successfully selected users by ids={}", idsStr);
             return results;
         } catch (SQLException e) {
-            LOGGER.error(String.format("Failed to select users by ids=%s", idsStr));
+            LOGGER.error("Failed to select users by ids={}", idsStr);
             throw new RuntimeException(e);
         }
     }
@@ -290,10 +293,10 @@ public class UserDao {
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank((page - 1) * perPage + i + 1);
             }
-            LOGGER.info(String.format("Successfully selected leaderboard for page=%s, perPage=%s", page, perPage));
+            LOGGER.info("Successfully selected leaderboard for page={}, perPage={}", page, perPage);
             return results;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to select leaderboard for page=%s, perPage=%s", page, perPage));
+            LOGGER.error("Failed to select leaderboard for page={}, perPage={}", page, perPage);
             throw new RuntimeException(ex);
         }
     }
@@ -313,10 +316,10 @@ public class UserDao {
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank(i + 1);
             }
-            LOGGER.info(String.format("Successfully selected users by name for name=%s, page=%s, perPage=%s", name, page, perPage));
+            LOGGER.info("Successfully selected users by name for name={}, page={}, perPage={}", name, page, perPage);
             return results;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to select users by name for name=%s, page=%s, perPage=%s", name, page, perPage));
+            LOGGER.error("Failed to select users by name for name={}, page={}, perPage={}", name, page, perPage);
             throw new RuntimeException(ex);
         }
     }
@@ -325,7 +328,7 @@ public class UserDao {
         var sql = "SELECT count FROM users_metadata";
         try {
             var count = runner.query(sql, INT_MAPPER);
-            LOGGER.info(String.format("Successfully counted user table records with count=%s", count));
+            LOGGER.info("Successfully counted user table records with count={}", count);
             return count;
         } catch (SQLException ex) {
             LOGGER.error("Failed to count user table records");

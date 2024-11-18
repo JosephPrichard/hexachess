@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static utils.Globals.EXECUTOR;
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 @AllArgsConstructor
 public class DataSeeder {
@@ -203,7 +203,7 @@ public class DataSeeder {
         seeder.seedHistTable(HISTORY_INSTS);
 
         var endTime = System.currentTimeMillis() - startTime;
-        LOGGER.info(String.format("Took %s ms to execute seeding script", endTime));
+        LOGGER.info("Took {} ms to execute seeding script", endTime);
 
 //        jedis.close();
         ds.close();

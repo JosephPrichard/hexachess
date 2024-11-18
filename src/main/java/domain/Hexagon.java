@@ -41,7 +41,7 @@ public class Hexagon {
         var file = getFile();
         var rank = getRank();
         for (var direction : directions) {
-            switch(direction) {
+            switch (direction) {
                 case UP -> rank += 1;
                 case DOWN -> rank -= 1;
                 case UP_LEFT -> {

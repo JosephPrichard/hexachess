@@ -13,7 +13,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class HistoryDao {
 
@@ -49,9 +49,9 @@ public class HistoryDao {
         try {
             runner.execute(sql, historyInst.whiteId, historyInst.blackId,
                 historyInst.result, historyInst.data, historyInst.winEloDiff, historyInst.loseEloDiff);
-            LOGGER.info(String.format("Successfully inserted a history=%s", historyInst));
+            LOGGER.info("Successfully inserted a history={}", historyInst);
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to insert a history=%s", historyInst));
+            LOGGER.error("Failed to insert a history={}", historyInst);
             throw new RuntimeException(ex);
         }
     }
@@ -77,10 +77,10 @@ public class HistoryDao {
             WHERE h1.id = ?""";
         try {
             var results = runner.query(sql, HIST_MAPPER, id);
-            LOGGER.info(String.format("Successfully selected history for id=%s", id));
+            LOGGER.info("Successfully selected history for id={}", id);
             return results;
         } catch (SQLException ex) {
-            LOGGER.error(String.format("Failed to select history for id=%s", id));
+            LOGGER.error("Failed to select history for id={}", id);
             throw new RuntimeException(ex);
         }
     }
@@ -121,10 +121,10 @@ public class HistoryDao {
 
         try {
             var results = runner.query(sql, HIST_LIST_MAPPER, params.toArray());
-            LOGGER.info(String.format("Successfully selected user histories page for userId=%s, afterId=%s", userId, afterId));
+            LOGGER.info("Successfully selected user histories page for userId={}, afterId={}", userId, afterId);
             return results;
         } catch (SQLException ex) {
-            LOGGER.info(String.format("Failed to select user histories page for userId=%s, afterId=%s", userId, afterId));
+            LOGGER.info("Failed to select user histories page for userId={}, afterId={}", userId, afterId);
             throw new RuntimeException(ex);
         }
     }

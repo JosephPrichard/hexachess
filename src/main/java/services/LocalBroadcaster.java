@@ -8,7 +8,7 @@ import io.jooby.WebSocket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class LocalBroadcaster implements Broadcaster {
 
@@ -21,7 +21,7 @@ public class LocalBroadcaster implements Broadcaster {
         var socketList = socketsMap.get(id);
         socketList.add(ws);
         socketsMap.put(id, socketList);
-        LOGGER.info(String.format("Ws %s subscribed to id: %s, ref: %s", ws.toString(), id, this));
+        LOGGER.info("Ws {} subscribed to id: {}, ref: {}", ws.toString(), id, this);
     }
 
     @Override
@@ -29,19 +29,19 @@ public class LocalBroadcaster implements Broadcaster {
         var socketList = socketsMap.get(id);
         socketList.remove(ws);
         socketsMap.put(id, socketList);
-        LOGGER.info(String.format("Ws %s unsubscribed from id: %s, ref: %s", ws.toString(), id, this));
+        LOGGER.info("Ws {} unsubscribed from id: {}, ref: {}", ws.toString(), id, this);
     }
 
     @Override
     public void broadcast(String id, String content) {
         var socketList = socketsMap.get(id);
         if (socketList == null) {
-            LOGGER.info(String.format("Broadcast local to id: %s, but there where no subscribers", id));
+            LOGGER.info("Broadcast local to id: {}, but there where no subscribers", id);
             return;
         }
         for (var socket : socketList) {
             socket.send(content);
         }
-        LOGGER.info(String.format("Broadcast local to id: %s, content: %s, ref: %s", id, content, this));
+        LOGGER.info("Broadcast local to id: {}, content: {}, ref: {}", id, content, this);
     }
 }

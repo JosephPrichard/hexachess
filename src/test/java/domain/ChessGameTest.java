@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static domain.ChessBoard.*;
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 public class ChessGameTest {
 
@@ -19,16 +19,16 @@ public class ChessGameTest {
         String str;
 
         str = new Hexagon(5, 8).toString();
-        Assertions.assertEquals(str, "f9");
+        Assertions.assertEquals("f9", str);
 
         str = new Hexagon(6, 9).toString();
-        Assertions.assertEquals(str, "g10");
+        Assertions.assertEquals("g10", str);
 
         str = new Hexagon(4, 4).toString();
-        Assertions.assertEquals(str, "e5");
+        Assertions.assertEquals("e5", str);
 
         str = new Hexagon(6, 0).toString();
-        Assertions.assertEquals(str, "g1");
+        Assertions.assertEquals("g1", str);
     }
 
     @Test
@@ -36,13 +36,13 @@ public class ChessGameTest {
         Hexagon hex;
 
         hex = Hexagon.fromNotation("f9");
-        Assertions.assertEquals(hex, new Hexagon(5, 8));
+        Assertions.assertEquals(new Hexagon(5, 8), hex);
 
         hex = Hexagon.fromNotation("g10");
-        Assertions.assertEquals(hex, new Hexagon(6, 9));
+        Assertions.assertEquals(new Hexagon(6, 9), hex);
 
         hex = Hexagon.fromNotation("e5");
-        Assertions.assertEquals(hex, new Hexagon(4, 4));
+        Assertions.assertEquals(new Hexagon(4, 4), hex);
     }
 
     @Test

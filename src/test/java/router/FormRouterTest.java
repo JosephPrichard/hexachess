@@ -10,19 +10,15 @@ import models.Player;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import services.GameService;
-import services.UserDao;
 import services.RemoteDict;
-import web.SessionService;
+import services.UserDao;
 import web.FormRouter;
+import web.SessionService;
 import web.State;
 
-import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 public class FormRouterTest {

@@ -16,7 +16,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import services.GameService;
 
 import static utils.Globals.*;
-import static utils.Log.LOGGER;
 
 public class WsRouter extends Jooby {
 

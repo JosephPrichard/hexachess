@@ -1,6 +1,5 @@
 package services;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import domain.ChessBoard;
 import models.GameState;
 import models.Player;
@@ -11,7 +10,7 @@ import redis.embedded.RedisServer;
 
 import java.util.List;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 // this is an integration test that runs against a real redis instance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

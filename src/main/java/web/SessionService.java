@@ -1,8 +1,5 @@
 package web;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jooby.Context;
 import io.jooby.Cookie;
 import io.jooby.SameSite;
 import lombok.AllArgsConstructor;
@@ -12,7 +9,7 @@ import models.Player;
 
 import java.security.SecureRandom;
 
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 @AllArgsConstructor
 public class SessionService {
@@ -74,7 +71,7 @@ public class SessionService {
         }
         var fields = cookieStr.substring(delimIndex + 1).split(",");
         if (fields.length < 3) {
-            LOGGER.error("Session is in invalid format " + cookieStr);
+            LOGGER.error("Session is in invalid format {}", cookieStr);
             return null;
         }
         return new SessionValue(

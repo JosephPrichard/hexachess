@@ -1,7 +1,6 @@
 package web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jooby.Jooby;
 import io.jooby.StatusCode;
 import io.jooby.exception.StatusCodeException;
@@ -10,11 +9,8 @@ import lombok.Getter;
 import models.Player;
 import org.jsoup.Jsoup;
 import services.UserDao;
-import utils.Html;
 
-import static utils.Globals.EXECUTOR;
-import static utils.Globals.JSON_MAPPER;
-import static utils.Log.LOGGER;
+import static utils.Globals.*;
 
 public class FormRouter extends Jooby {
 
@@ -55,7 +51,7 @@ public class FormRouter extends Jooby {
             if (usernameStr.length() < 5 || usernameStr.length() > 20) {
                 throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username should be between 5 and 20 characters"));
             }
-            if (!Jsoup.isValid(usernameStr, Html.SAFELIST)) {
+            if (!Jsoup.isValid(usernameStr, HTML_SAFELIST)) {
                 throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Username cannot contain invalid or unsafe characters"));
             }
             if (passwordStr.length() < 10 || passwordStr.length() > 100) {
@@ -75,7 +71,7 @@ public class FormRouter extends Jooby {
                 ctx.setResponseCookie(cookie);
                 remoteDict.setSession(sessionId, player, cookie.getMaxAge());
 
-                LOGGER.info("Registered a new player: " + player);
+                LOGGER.info("Registered a new player={}", player);
 
                 return new FormResp("Signed up successfully!");
             } catch (UserDao.TakenUsernameException ex) {
@@ -106,7 +102,7 @@ public class FormRouter extends Jooby {
             ctx.setResponseCookie(cookie);
             remoteDict.setSession(sessionId, player, cookie.getMaxAge());
 
-            LOGGER.info("Player has logged in: " + player);
+            LOGGER.info("Player has logged in={}", player);
 
             return new FormResp("Logged in successfully!");
         });
@@ -134,7 +130,7 @@ public class FormRouter extends Jooby {
             }
             userDao.update(player.getId(), newUsernameStr, newCountryStr, newPasswordStr);
 
-            LOGGER.info(String.format("Updated data of user: %s to newUsername: %s newCountry: %s", player, newUsernameStr, newCountryStr));
+            LOGGER.info("Updated data of user: {} to newUsername: {} newCountry: {}", player, newUsernameStr, newCountryStr);
 
             return new FormResp("Updated password successfully!");
         });
@@ -142,7 +138,7 @@ public class FormRouter extends Jooby {
         post("/forms/update-session", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
 
-            var cookieStr =  ctx.header("Cookie").valueOrNull();
+            var cookieStr = ctx.header("Cookie").valueOrNull();
 
             var session = sessionService.getSession(cookieStr);
             if (session == null) {
@@ -154,7 +150,7 @@ public class FormRouter extends Jooby {
                 remoteDict.updateSessionEx(session.getSessionId(), cookie.getMaxAge());
             }
 
-            LOGGER.info("Updated the session for player: " + session);
+            LOGGER.info("Updated the session for player={}", session);
 
             return new FormResp("Updated session successfully!");
         });
@@ -162,7 +158,7 @@ public class FormRouter extends Jooby {
         post("/forms/logout", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
 
-            var cookieStr =  ctx.header("Cookie").valueOrNull();
+            var cookieStr = ctx.header("Cookie").valueOrNull();
 
             var session = sessionService.getSession(cookieStr);
             remoteDict.deleteSession(session.getSessionId());
@@ -170,7 +166,7 @@ public class FormRouter extends Jooby {
             var cookie = sessionService.createEmptyCookie();
             ctx.setResponseCookie(cookie);
 
-            LOGGER.info("Player has logged out: " + session);
+            LOGGER.info("Player has logged out of session=" + session);
 
             return new FormResp("Logged out successfully!");
         });

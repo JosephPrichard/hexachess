@@ -3,7 +3,6 @@ package router;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import domain.Hexagon;
 import domain.Move;
 import io.jooby.test.MockRouter;
@@ -13,16 +12,18 @@ import models.Player;
 import org.junit.jupiter.api.*;
 import redis.clients.jedis.JedisPooled;
 import redis.embedded.RedisServer;
-import services.*;
+import services.GameService;
+import services.LocalBroadcaster;
+import services.RemoteDict;
 import web.State;
 import web.WsRouter;
 
-import java.util.*;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Mockito.mock;
-import static utils.Log.LOGGER;
+import static utils.Globals.LOGGER;
 
 // integration style test that mocks out external data stores but checks if a game can be played through websockets
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -66,7 +67,7 @@ public class WsRouterTest {
             var mockClientTest = new MockWsClientTest();
             mockClientTest.mockClient = mockRouter.ws("/games/join/" + gameId, (client) -> client.onMessage((message) -> {
                 try {
-                    LOGGER.info(String.format("Received message %s", message));
+                    LOGGER.info("Received message {}", message);
 
                     var msgObject = jsonMapper.readValue((String) message, WsRouter.OutputMsg.class);
                     if (msgObject.getType() == WsRouter.OutputMsg.ERROR) {

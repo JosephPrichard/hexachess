@@ -6,10 +6,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jsoup.Jsoup;
 import utils.Globals;
-import utils.Html;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
+
+import static utils.Globals.HTML_SAFELIST;
 
 @Data
 @NoArgsConstructor
@@ -30,7 +31,7 @@ public class UserEntity {
     Timestamp joinedOn;
 
     public UserEntity(String id, String username, String country, float elo, int wins, int losses) {
-       this(id, username, country, elo, elo, wins, losses, 0, null);
+        this(id, username, country, elo, elo, wins, losses, 0, null);
     }
 
     public UserEntity(String id, String username, String country, float elo, int wins, int losses, int rank) {
@@ -43,7 +44,7 @@ public class UserEntity {
     }
 
     public int getTotal() {
-        return  wins + losses;
+        return wins + losses;
     }
 
     public int getRoundedElo() {
@@ -75,7 +76,7 @@ public class UserEntity {
     }
 
     public void sanitize() {
-        username = Jsoup.clean(username, Html.SAFELIST);
-        country = Jsoup.clean(country, Html.SAFELIST);
+        username = Jsoup.clean(username, HTML_SAFELIST);
+        country = Jsoup.clean(country, HTML_SAFELIST);
     }
 }

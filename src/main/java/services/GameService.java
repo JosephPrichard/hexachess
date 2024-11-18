@@ -10,7 +10,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import static utils.Globals.*;
-import static utils.Log.LOGGER;
 
 @AllArgsConstructor
 public class GameService {
@@ -53,19 +52,19 @@ public class GameService {
             boolean chooseWhite = isFirstPlayerWhite == null ? RANDOM.nextInt() % 2 == 0 : isFirstPlayerWhite;
             if (chooseWhite) {
                 state.setWhitePlayer(player);
-                LOGGER.info(String.format("Player %s joined as white player %s", player.getId(), gameId));
+                LOGGER.info("Player {} joined as white player {}", player.getId(), gameId);
             } else {
                 state.setBlackPlayer(player);
-                LOGGER.info(String.format("Player %s joined as black player %s", player.getId(), gameId));
+                LOGGER.info("Player {} joined as black player {}", player.getId(), gameId);
             }
         } else if (!hasBlackPlayer) {
             // no black player, so join as black
             state.setBlackPlayer(player);
-            LOGGER.info(String.format("Player %s joined as black player %s", player.getId(), gameId));
+            LOGGER.info("Player {} joined as black player {}", player.getId(), gameId);
         } else if (!hasWhitePlayer) {
             // no white player, so join as white
             state.setWhitePlayer(player);
-            LOGGER.info(String.format("Player %s joined as white player %s", player.getId(), gameId));
+            LOGGER.info("Player {} joined as white player {}", player.getId(), gameId);
         } else {
             // both players, so we cannot join... just return the game data to view
             return state;
@@ -83,15 +82,15 @@ public class GameService {
         var game = state.getGame();
 
         if (state.isEnded()) {
-            LOGGER.info(String.format("Move attempted on ended game %s", gameId));
+            LOGGER.info("Move attempted on ended game {}", gameId);
             throw new MoveException("Cannot make a move on a game that is over!");
         }
         if (!state.isPlayerTurn(player)) {
-            LOGGER.info(String.format("%s cannot make move on game %s, it isn't their turn", player, gameId));
+            LOGGER.info("{} cannot make move on game {}, it isn't their turn", player, gameId);
             throw new MoveException("Cannot make a move when it isn't your turn!");
         }
         if (!game.isValidMove(move)) {
-            LOGGER.info(String.format(" %s made invalid move %s on game %s", player, move, gameId));
+            LOGGER.info(" {} made invalid move {} on game {}", player, move, gameId);
             throw new MoveException("Cannot make an invalid move!");
         }
 
@@ -106,7 +105,7 @@ public class GameService {
             EXECUTOR.execute(() -> onFinishGame(state, isWhiteWin));
         }
 
-        LOGGER.info(String.format("%s made move %s on game %s", player, move, gameId));
+        LOGGER.info("{} made move {} on game {}", player, move, gameId);
         return remoteDict.setGame(gameId, state);
     }
 
@@ -126,7 +125,7 @@ public class GameService {
                 new RemoteDict.EloChangeSet(loseId, changeSet.loseEloDiff));
             historyDao.insert(whiteId, blackId, result, changeSet.getWinEloDiff(), changeSet.getLoseEloDiff(), moveHistoryData);
         } catch (Exception ex) {
-            LOGGER.info("Failed to persist game results to database in background thread " + ex);
+            LOGGER.info("Failed to persist game results to database in background thread {}", String.valueOf(ex));
         }
     }
 

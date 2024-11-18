@@ -11,7 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static domain.ChessBoard.*;
-import static domain.Hexagon.*;
+import static domain.Hexagon.Direction;
 
 @Data
 @NoArgsConstructor
@@ -178,7 +178,7 @@ public class ChessGame {
         var kingMoves = pieceMoves.get(pieceMoves.size() - 1);
 
         // the LAST element should always be the king moves!
-        assert(board.getPiece(kingMoves.getHex()) == (turn.isWhite() ? WHITE_KING : BLACK_KING));
+        assert (board.getPiece(kingMoves.getHex()) == (turn.isWhite() ? WHITE_KING : BLACK_KING));
 
         // a king must be checked to be in checkmate
         var isAttacked = findAttacking(oppPieceMoves);
@@ -211,7 +211,8 @@ public class ChessGame {
                     case WHITE_QUEEN, BLACK_QUEEN -> moves.add(findQueenMoves(hex));
                     case WHITE_KNIGHT, BLACK_KNIGHT -> moves.add(findKnightMoves(hex));
                     case WHITE_PAWN, BLACK_PAWN -> moves.add(findPawnMoves(hex, turn));
-                    case WHITE_KING, BLACK_KING -> {} // this is a no-op, we find the king moves in a separate function
+                    case WHITE_KING, BLACK_KING -> {
+                    } // this is a no-op, we find the king moves in a separate function
                     default -> throw new IllegalStateException("Board has invalid piece " + piece + " at hexagon " + hex);
                 }
             }

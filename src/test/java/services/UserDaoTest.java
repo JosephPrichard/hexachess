@@ -45,7 +45,7 @@ public class UserDaoTest {
 
     @Test
     public void testInsertThenVerify() {
-         // when
+        // when
         var inst1 = userDao.insert("user1", "password1");
         var inst2 = userDao.insert("user2", "password2");
         var inst3 = userDao.insert("user3", "password3");
