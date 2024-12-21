@@ -1,4 +1,4 @@
-package router;
+package web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.jooby.Cookie;
@@ -12,9 +12,6 @@ import org.junit.jupiter.api.Test;
 import services.GameService;
 import services.RemoteDict;
 import services.UserDao;
-import web.FormRouter;
-import web.SessionService;
-import web.State;
 
 import java.util.concurrent.atomic.AtomicReference;
 

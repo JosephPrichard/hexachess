@@ -27,15 +27,12 @@ public class UserEntity {
     int wins;
     int losses;
     int rank;
+    String bio;
     @EqualsAndHashCode.Exclude
     Timestamp joinedOn;
 
-    public UserEntity(String id, String username, String country, float elo, int wins, int losses) {
-        this(id, username, country, elo, elo, wins, losses, 0, null);
-    }
-
-    public UserEntity(String id, String username, String country, float elo, int wins, int losses, int rank) {
-        this(id, username, country, elo, elo, wins, losses, rank, null);
+    public UserEntity(String id, String username, String country, float elo, int rank) {
+        this(id, username, country, elo, elo, 0, 0, rank, null, null);
     }
 
     public int getWinRate() {

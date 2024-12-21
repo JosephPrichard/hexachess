@@ -1,13 +1,3 @@
-/**
- * @typedef {Object} Session
- * @property {string} sessionId
- * @property {string} playerId
- * @property {string} username
- */
-
-/**
- * @returns {Session | undefined}
- */
 function getSessionCookie() {
     const value = ('; ' + document.cookie).split(`; session=`).pop().split(';')[0];
     if (value === "") {

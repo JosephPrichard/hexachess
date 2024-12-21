@@ -1,9 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Profile - Hexachess</title>
+    <title>{{user.username}} - Hexachess</title>
     <link rel="stylesheet" href="/css/index.css">
     <script>
+        const userId = '{{user.id}}';
+
         async function getUserHistories(userId, afterId) {
             const url =`/partials/player-history?userId=${userId}&afterId=${afterId}`;
             try {
@@ -26,7 +28,8 @@
             if (!hasMoreRecords || !isAtPageBottom) {
                 return;
             }
-            getUserHistories('{{user.id}}', table.lastElementChild.getAttribute("data-id"))
+            const lastId = table.lastElementChild.getAttribute("data-id");
+            getUserHistories(userId, lastId)
                 .then(([html, ok]) => {
                     if (ok) {
                         table.insertAdjacentHTML('beforeend', html);

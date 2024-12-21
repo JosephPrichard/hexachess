@@ -1,5 +1,6 @@
 package web;
 
+import domain.ChessBoard;
 import io.jooby.Jooby;
 import io.jooby.MediaType;
 import io.jooby.Route;
@@ -10,10 +11,11 @@ import models.HistoryEntity;
 import models.Pagination;
 import models.UserEntity;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static utils.Globals.EXECUTOR;
+import static utils.Globals.*;
 
 public class PageRouter extends Jooby {
 
@@ -41,11 +43,19 @@ public class PageRouter extends Jooby {
 
     @Data
     @AllArgsConstructor
+    public static class ReplayView {
+        String initialBoard;
+        HistoryEntity history;
+    }
+
+    @Data
+    @AllArgsConstructor
     public static class ErrorView {
         int code;
         String message;
     }
 
+    private final String initialBoardJson;
     private final String loginHtml;
     private final String registerHtml;
 
@@ -57,8 +67,17 @@ public class PageRouter extends Jooby {
         var sessionService = state.getSessionService();
         var templates = state.getTemplates();
 
-        loginHtml = Templates.applyQuietly(templates.getLoginTemplate());
-        registerHtml = Templates.applyQuietly(templates.getRegisterTemplate());
+        try {
+            var loginTemplate = templates.getLoginTemplate();
+            var registerTemplate = templates.getRegisterTemplate();
+
+            initialBoardJson = JSON_MAPPER.writeValueAsString(ChessBoard.initial());
+            loginHtml = loginTemplate != null ? loginTemplate.apply(null) : "";
+            registerHtml = registerTemplate != null ? registerTemplate.apply(null) : "";
+        } catch (IOException ex) {
+            LOGGER.error("Failed during page document initialization", ex);
+            throw new RuntimeException(ex);
+        }
 
         setWorker(EXECUTOR);
 
@@ -108,7 +127,7 @@ public class PageRouter extends Jooby {
 
             var userEntity = userDao.getById(session.getPlayerId());
 
-            var template = templates.getSettingsTemplate();
+            var template = templates.getPreferencesTemplates();
             return template.apply(userEntity);
         });
 
@@ -235,8 +254,10 @@ public class PageRouter extends Jooby {
 
             var history = historyDao.getHistory(historyId);
 
-            var template = templates.getGameHistoryTemplate();
-            return template.apply(history);
+            history.sanitize();
+
+            var template = templates.getGameStateoryTemplate();
+            return template.apply(new ReplayView(initialBoardJson, history));
         });
     }
 }

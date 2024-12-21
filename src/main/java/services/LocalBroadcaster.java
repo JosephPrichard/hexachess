@@ -39,9 +39,7 @@ public class LocalBroadcaster implements Broadcaster {
             LOGGER.info("Broadcast local to id: {}, but there where no subscribers", id);
             return;
         }
-        for (var socket : socketList) {
-            socket.send(content);
-        }
+        socketList.forEach((socket) -> socket.send(content));
         LOGGER.info("Broadcast local to id: {}, content: {}, ref: {}", id, content, this);
     }
 }

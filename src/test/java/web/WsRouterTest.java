@@ -1,4 +1,4 @@
-package router;
+package web;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -15,8 +15,6 @@ import redis.embedded.RedisServer;
 import services.GameService;
 import services.LocalBroadcaster;
 import services.RemoteDict;
-import web.State;
-import web.WsRouter;
 
 import java.util.List;
 import java.util.Queue;

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Preferences - Hexachess</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <script>
+        async function postUpdateUser(username, bio) {
+            const formData = new FormData();
+            formData.append("new-username", username);
+            formData.append("new-bio", bio);
+
+            const url =`/forms/update-user`;
+            try {
+                const resp = await fetch(url, { method: 'POST', body: formData });
+                return [await resp.json(), resp.ok];
+            } catch (ex) {
+                console.error(ex);
+                return [{ message: "An unexpected error has occurred" }, false];
+            }
+        }
+
+        function onUpdate() {
+            const usernameElem = document.getElementById("username");
+            const bioElem = document.getElementById("bio");
+
+            postUpdateUser(usernameElem.value, bioElem.value)
+                .then(([object, ok]) => {
+                    console.log("Login response", object, ok);
+
+                    const messageElem = document.getElementById("update-user-form-message");
+                    messageElem.innerText = object.message;
+
+                    if (ok) {
+                        messageElem.className = "";
+                    } else {
+                        messageElem.className = "red-color";
+                    }
+                })
+
+            return false;
+        }
+
+        async function postSignOut() {
+            const url =`/forms/logout`;
+            try {
+                const resp = await fetch(url, { method: 'POST' });
+                return [await resp.json(), resp.ok];
+            } catch (ex) {
+                console.error(ex);
+                return [{ message: "An unexpected error has occurred" }, false];
+            }
+        }
+
+        function onSignOut() {
+            postSignOut()
+                .then(([object, ok]) => {
+                    console.log("Logout response", object, ok);
+                    window.location = "/";
+                })
+        }
+    </script>
+</head>
+<body>
+{{> partials/banner }}
+<div class="center-horizontal-container">
+    <div class="title-lg">
+        Edit Profile
+    </div>
+    <div style="width: 500px">
+        <form id="update-user-form" class="form-wrapper" onsubmit="return onUpdate();">
+            <label for="username" style="font-size: 17px">Username</label>
+            <input id="username" name="username" placeholder="Username" value="{{username}}" style="margin-top: 5px; margin-bottom: 10px;"/>
+            <label for="biography" style="font-size: 17px">Biography</label>
+            <textarea id="bio" name="bio" rows="8">{{bio}}</textarea>
+            <button id="update-form-submit" class="button-grey" type="submit">
+                Update
+            </button>
+            <div id="update-user-form-message" style="margin-top: 20px; min-height: 20px;"></div>
+        </form>
+        <br>
+        <br>
+        <button id="update-form-submit" class="button-grey button-red" onclick="onSignOut();">
+            Sign Out
+        </button>
+    </div>
+</div>
+</body>
+</html>

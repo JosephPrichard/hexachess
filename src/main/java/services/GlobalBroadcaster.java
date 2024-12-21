@@ -23,13 +23,6 @@ public class GlobalBroadcaster implements Broadcaster {
         this.jedis = jedis;
     }
 
-    @Data
-    @AllArgsConstructor
-    static class Message {
-        private final String id;
-        private final String content;
-    }
-
     @Override
     public void subscribe(String id, WebSocket ws) {
         localBroadcaster.subscribe(id, ws);

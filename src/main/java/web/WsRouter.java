@@ -120,10 +120,10 @@ public class WsRouter extends Jooby {
                 // the joiner needs a snapshot of what the game actually looks like when joining!
                 var jsonResult = JSON_MAPPER.writeValueAsString(OutputMsg.ofJoin(player, game));
                 ws.send(jsonResult);
-                LOGGER.info(String.format("Player %s connected to game %s", player.getId(), gameId));
+                LOGGER.info("Player {} connected to game {}", player.getId(), gameId);
             } catch (Exception e) {
                 // if we encounter some unknown error or maybe json failure, we can't really do anything so just log and close the connection
-                LOGGER.error(String.format("Fatal exception occurred: %s", e.getMessage()));
+                LOGGER.error("Fatal exception occurred: {}", e.getMessage());
                 ws.close();
             }
         });
@@ -136,7 +136,7 @@ public class WsRouter extends Jooby {
         return (ws, message) -> EXECUTOR.execute(() -> {
             try {
                 try {
-                    LOGGER.info(String.format("Received message from player %s, %s on game %s", player.getId(), message.value(), gameId));
+                    LOGGER.info("Received message from player {}, {} on game {}", player.getId(), message.value(), gameId);
                     var input = JSON_MAPPER.readValue(message.value(), InputMsg.class);
                     var type = input.getType();
                     switch (type) {
@@ -167,11 +167,11 @@ public class WsRouter extends Jooby {
                     // handle any unknown error that happens during message processing by sending an error back to og sender
                     var jsonOutput = JSON_MAPPER.writeValueAsString(OutputMsg.ofError("An unexpected error has occurred"));
                     ws.send(jsonOutput);
-                    LOGGER.error("Unexpected error occurred in websocket message handler " + ExceptionUtils.getStackTrace(e));
+                    LOGGER.error("Unexpected error occurred in websocket message handler {}", ExceptionUtils.getStackTrace(e));
                 }
             } catch (JsonProcessingException e) {
                 // if we can't write the json back to the client, we can't really do anything so just log and close
-                LOGGER.error("Failed to serialize json: " + ExceptionUtils.getStackTrace(e));
+                LOGGER.error("Failed to serialize json: {}", ExceptionUtils.getStackTrace(e));
                 ws.close();
             }
         });

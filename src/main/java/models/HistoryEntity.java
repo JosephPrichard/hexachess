@@ -95,5 +95,8 @@ public class HistoryEntity {
         blackName = Jsoup.clean(blackName, HTML_SAFELIST);
         whiteCountry = Jsoup.clean(whiteCountry, HTML_SAFELIST);
         blackCountry = Jsoup.clean(blackCountry, HTML_SAFELIST);
+        if (data != null) {
+            Jsoup.clean(data, HTML_SAFELIST);
+        }
     }
 }

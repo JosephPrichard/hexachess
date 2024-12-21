@@ -1,9 +1,9 @@
 BEGIN;
 -- Create extensions.
-CREATE EXTENSION pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Create tables.
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id VARCHAR NOT NULL,
     username VARCHAR NOT NULL,
     country VARCHAR,
@@ -11,18 +11,19 @@ CREATE TABLE users (
     highestElo NUMERIC NOT NULL,
     wins INTEGER NOT NULL,
     losses INTEGER NOT NULL,
+    bio VARCHAR NOT NULL DEFAULT '',
     joinedOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     password VARCHAR NOT NULL,
     salt VARCHAR NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT unique_username UNIQUE (username));
 
-CREATE TABLE users_metadata (
+CREATE TABLE IF NOT EXISTS users_metadata (
     id NUMERIC,
     count INTEGER,
     PRIMARY KEY (id));
 
-CREATE TABLE game_histories (
+CREATE TABLE IF NOT EXISTS game_histories (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     whiteId VARCHAR NOT NULL,
     blackId VARCHAR NOT NULL,
@@ -33,13 +34,13 @@ CREATE TABLE game_histories (
     loseElo NUMERIC);
 
 -- Create indices.
-CREATE INDEX idxTrgmUsername ON users USING GIST (username gist_trgm_ops);
-CREATE INDEX idxUsername ON users(username);
-CREATE INDEX idxElo ON users(elo);
+CREATE INDEX IF NOT EXISTS idxTrgmUsername ON users USING GIST (username gist_trgm_ops);
+CREATE INDEX IF NOT EXISTS idxUsername ON users(username);
+CREATE INDEX IF NOT EXISTS idxElo ON users(elo);
 
-CREATE INDEX idxWhiteId ON game_histories(whiteId, id);
-CREATE INDEX idxBlackId ON game_histories(blackId, id);
-CREATE INDEX idxBothIds ON game_histories(whiteId, blackId, id);
+CREATE INDEX IF NOT EXISTS idxWhiteId ON game_histories(whiteId, id);
+CREATE INDEX IF NOT EXISTS idxBlackId ON game_histories(blackId, id);
+CREATE INDEX IF NOT EXISTS idxBothIds ON game_histories(whiteId, blackId, id);
 
 -- Create functions and procedures.
 CREATE FUNCTION probabilityWins(IN elo1 NUMERIC, IN elo2 NUMERIC)

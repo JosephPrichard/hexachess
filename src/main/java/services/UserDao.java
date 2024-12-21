@@ -75,7 +75,8 @@ public class UserDao {
 
         var sql = """
             BEGIN;
-            INSERT INTO users (id, username, country, elo, highestElo, wins, losses, password, salt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO users (id, username, country, elo, highestElo, wins, losses, password, salt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             UPDATE users_metadata SET count = count + 1 WHERE id = 1;
             END;""";
         try {
@@ -89,13 +90,15 @@ public class UserDao {
                 inst.getLosses(),
                 hashedPassword,
                 salt);
-            LOGGER.info("Successfully inserted user={}", inst);
+            LOGGER.info("Inserted user={}", inst);
         } catch (SQLException ex) {
-            LOGGER.error("Failed to insert user={}", inst, ex);
             var nextEx = ex.getNextException();
             if ("23505".equals(nextEx.getSQLState())) {
+                LOGGER.warn("Username is already taken={}", inst, ex);
                 throw new TakenUsernameException();
             }
+
+            LOGGER.error("Failed to insert user={}", inst, ex);
             throw new RuntimeException(ex);
         }
     }
@@ -124,6 +127,7 @@ public class UserDao {
 
             var saltedPassword = inputPassword + salt;
             var result = BCrypt.verifyer().verify(saltedPassword.toCharArray(), password);
+
             LOGGER.info("Password verification {} for username={}", result.verified ? "successful" : "failed", usernameOut);
             return result.verified ? new Player(id, usernameOut) : null;
         } catch (SQLException ex) {
@@ -137,9 +141,9 @@ public class UserDao {
         }
     }
 
-    public void update(String id, String newUsername, String newCountry, String newPassword) {
-        if (newUsername == null && newCountry == null && newPassword == null) {
-            LOGGER.info("No fields provided for update.");
+    public void updateUser(String id, String newUsername, String newCountry, String newBio) {
+        if (newUsername == null && newCountry == null && newBio == null) {
+            LOGGER.info("No fields provided for user update.");
             return;
         }
 
@@ -154,9 +158,9 @@ public class UserDao {
             sql.append("country = ?,");
             params.add(newCountry);
         }
-        if (newPassword != null) {
-            sql.append("password = ?,");
-            params.add(newPassword);
+        if (newBio != null) {
+            sql.append("bio = ?,");
+            params.add(newBio);
         }
         sql.deleteCharAt(sql.length() - 1);
         sql.append(" WHERE id = ?; END");
@@ -164,7 +168,22 @@ public class UserDao {
 
         try {
             runner.execute(sql.toString(), params.toArray());
-            LOGGER.info("Successfully updated user with id={}", id);
+            LOGGER.info("Updated user data with id={}", id);
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to update user with id={}", id, ex);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void updatePassword(String id, String newPassword) {
+        var salt = generateSalt();
+        var saltedPassword = newPassword + salt;
+        var hashedPassword = BCrypt.withDefaults().hashToString(12, saltedPassword.toCharArray());
+
+        var sql = "BEGIN; UPDATE users SET password = ?, salt = ? WHERE id = ?; END;";
+        try {
+            runner.execute(sql, hashedPassword, salt, id);
+            LOGGER.info("Updated user password with id={}", id);
         } catch (SQLException ex) {
             LOGGER.error("Failed to update user with id={}", id, ex);
             throw new RuntimeException(ex);
@@ -202,7 +221,7 @@ public class UserDao {
             double winEloDiff = stmt.getBigDecimal(3).doubleValue();
             double loseEloDiff = stmt.getBigDecimal(4).doubleValue();
 
-            LOGGER.info("Successfully updated stats: winId={} loseId={}, winEloDiff={}, loseEloDiff={}", winId, loseId, winEloDiff, loseEloDiff);
+            LOGGER.info("Updated stats: winId={} loseId={}, winEloDiff={}, loseEloDiff={}", winId, loseId, winEloDiff, loseEloDiff);
             return new EloChangeSet(winEloDiff, loseEloDiff);
         } catch (SQLException ex) {
             LOGGER.error("Failed to update stats for winId={}, loseId={}", winId, loseId, ex);
@@ -216,12 +235,12 @@ public class UserDao {
 
     public UserEntity getById(String id) {
         var sql = """
-            SELECT id, username, country, elo, highestElo, wins, losses, joinedOn
+            SELECT id, username, country, elo, highestElo, wins, losses, bio, joinedOn
             FROM users
             WHERE id = ?""";
         try {
             var user = runner.query(sql, USER_MAPPER, id);
-            LOGGER.info("Successfully fetched user by id={}", id);
+            LOGGER.info("Fetched user by id={}", id);
             return user;
         } catch (SQLException ex) {
             LOGGER.error("Failed to fetch user by id={}", id, ex);
@@ -237,7 +256,7 @@ public class UserDao {
             WHERE u1.id = ?""";
         try {
             var user = runner.query(sql, USER_MAPPER, id);
-            LOGGER.info("Successfully fetched user with rank by id={}", id);
+            LOGGER.info("Fetched user with rank by id={}", id);
             return user;
         } catch (SQLException ex) {
             LOGGER.error("Failed to fetch user with rank by id={}", id, ex);
@@ -259,7 +278,7 @@ public class UserDao {
         var idsStr = ids.stream().collect(Collectors.joining(",", "[", "]"));
         try {
             var results = runner.query(sql, USER_LIST_MAPPER, ids.toArray());
-            LOGGER.info("Successfully selected users by ids={}", idsStr);
+            LOGGER.info("Selected users by ids={}", idsStr);
             return results;
         } catch (SQLException e) {
             LOGGER.error("Failed to select users by ids={}", idsStr);
@@ -271,7 +290,7 @@ public class UserDao {
         var sql = "SELECT id, username, country, elo, wins, losses FROM users";
         try {
             var results = runner.query(sql, USER_LIST_MAPPER);
-            LOGGER.info("Successfully selected ALL records from the user table");
+            LOGGER.info("Selected ALL records from the user table");
             return results;
         } catch (SQLException ex) {
             LOGGER.error("Failed to select ALL records from the user table");
@@ -293,7 +312,7 @@ public class UserDao {
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank((page - 1) * perPage + i + 1);
             }
-            LOGGER.info("Successfully selected leaderboard for page={}, perPage={}", page, perPage);
+            LOGGER.info("Selected leaderboard for page={}, perPage={}", page, perPage);
             return results;
         } catch (SQLException ex) {
             LOGGER.error("Failed to select leaderboard for page={}, perPage={}", page, perPage);
@@ -316,7 +335,7 @@ public class UserDao {
             for (int i = 0; i < results.size(); i++) {
                 results.get(i).setRank(i + 1);
             }
-            LOGGER.info("Successfully selected users by name for name={}, page={}, perPage={}", name, page, perPage);
+            LOGGER.info("Selected users by name for name={}, page={}, perPage={}", name, page, perPage);
             return results;
         } catch (SQLException ex) {
             LOGGER.error("Failed to select users by name for name={}, page={}, perPage={}", name, page, perPage);
@@ -328,7 +347,7 @@ public class UserDao {
         var sql = "SELECT count FROM users_metadata";
         try {
             var count = runner.query(sql, INT_MAPPER);
-            LOGGER.info("Successfully counted user table records with count={}", count);
+            LOGGER.info("Counted user table records with count={}", count);
             return count;
         } catch (SQLException ex) {
             LOGGER.error("Failed to count user table records");

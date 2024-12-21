@@ -48,7 +48,7 @@ public class Router extends Jooby {
                 // non 500 errors contain clear messages that can be spit out as strings to both server logs and the client
                 var message = "Error: " + statusCode + ", " + cause.getMessage();
                 LOGGER.error(message);
-                ctx.send(message);
+                ctx.send(cause.getMessage());
             }
         });
 
@@ -59,7 +59,7 @@ public class Router extends Jooby {
 
         assets("/css/index.css", "/css/index.css");
 
-        assets("/scripts/chess.js", "/scripts/chess.js");
+        assets("/scripts/chess-view.js", "/scripts/chess-view.js");
 
         assets("/scripts/session.js", "/scripts/session.js");
 

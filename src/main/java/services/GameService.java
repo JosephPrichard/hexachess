@@ -46,28 +46,35 @@ public class GameService {
         var hasWhitePlayer = state.getWhitePlayer() != null;
         var hasBlackPlayer = state.getBlackPlayer() != null;
 
+        boolean joinedAsWhite;
         if (!hasWhitePlayer && !hasBlackPlayer) {
             // neither player, so join as either
             var isFirstPlayerWhite = state.getIsFirstPlayerWhite();
             boolean chooseWhite = isFirstPlayerWhite == null ? RANDOM.nextInt() % 2 == 0 : isFirstPlayerWhite;
             if (chooseWhite) {
                 state.setWhitePlayer(player);
-                LOGGER.info("Player {} joined as white player {}", player.getId(), gameId);
+                joinedAsWhite = true;
             } else {
                 state.setBlackPlayer(player);
-                LOGGER.info("Player {} joined as black player {}", player.getId(), gameId);
+                joinedAsWhite = false;
             }
         } else if (!hasBlackPlayer) {
             // no black player, so join as black
             state.setBlackPlayer(player);
-            LOGGER.info("Player {} joined as black player {}", player.getId(), gameId);
+            joinedAsWhite = false;
         } else if (!hasWhitePlayer) {
             // no white player, so join as white
             state.setWhitePlayer(player);
-            LOGGER.info("Player {} joined as white player {}", player.getId(), gameId);
+            joinedAsWhite = true;
         } else {
             // both players, so we cannot join... just return the game data to view
             return state;
+        }
+
+        if (joinedAsWhite) {
+            LOGGER.info("Player {} joined as white player {}", player.getId(), gameId);
+        } else {
+            LOGGER.info("Player {} joined as black player {}", player.getId(), gameId);
         }
 
         return remoteDict.setGame(gameId, state);
@@ -117,7 +124,7 @@ public class GameService {
             var winId = isWhiteWin ? whiteId : blackId;
             var loseId = isWhiteWin ? blackId : whiteId;
 
-            var moveHistoryData = JSON_MAPPER.writeValueAsString(state.getHistory());
+            var moveHistoryData = JSON_MAPPER.writeValueAsString(state.getMoveList());
 
             var changeSet = userDao.updateStatsUsingResult(winId, loseId);
             remoteDict.updateLeaderboardUser(

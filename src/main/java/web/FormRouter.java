@@ -107,7 +107,7 @@ public class FormRouter extends Jooby {
             return new FormResp("Logged in successfully!");
         });
 
-        post("/forms/update-user", ctx -> {
+        post("/forms/update-password", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
 
             var form = ctx.form();
@@ -120,19 +120,39 @@ public class FormRouter extends Jooby {
 
             var usernameStr = username.toString();
             var passwordStr = password.toString();
-            var newUsernameStr = form.get("new-username").valueOrNull();
-            var newCountryStr = form.get("new-country").valueOrNull();
             var newPasswordStr = form.get("new-password").valueOrNull();
 
             var player = userDao.verify(usernameStr, passwordStr);
             if (player == null) {
                 throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid"));
             }
-            userDao.update(player.getId(), newUsernameStr, newCountryStr, newPasswordStr);
+            userDao.updatePassword(player.getId(), newPasswordStr);
 
-            LOGGER.info("Updated data of user: {} to newUsername: {} newCountry: {}", player, newUsernameStr, newCountryStr);
+            LOGGER.info("Updated data of user: {}", player);
 
-            return new FormResp("Updated password successfully!");
+            return new FormResp("Updated successfully!");
+        });
+
+        post("/forms/update-user", ctx -> {
+            ctx.setResponseHeader("Content-Type", "application/json");
+
+            var cookieStr = ctx.header("Cookie").valueOrNull();
+
+            var form = ctx.form();
+            var newUsernameStr = form.get("new-username").valueOrNull();
+            var newCountryStr = form.get("new-country").valueOrNull();
+            var newBioStr = form.get("new-bio").valueOrNull();
+
+            var session = sessionService.getSession(cookieStr);
+            if (session == null) {
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Cannot update user when you are not logged in"));
+            }
+
+            userDao.updateUser(session.getPlayerId(), newUsernameStr, newCountryStr, newBioStr);
+
+            LOGGER.info("Updated data of user: {} to newUsername: {} newCountry: {} newBio: {}", session.getPlayerId(), newUsernameStr, newCountryStr, newBioStr);
+
+            return new FormResp("Updated successfully!");
         });
 
         post("/forms/update-session", ctx -> {
@@ -166,7 +186,7 @@ public class FormRouter extends Jooby {
             var cookie = sessionService.createEmptyCookie();
             ctx.setResponseCookie(cookie);
 
-            LOGGER.info("Player has logged out of session=" + session);
+            LOGGER.info("Player has logged out of session={}", session);
 
             return new FormResp("Logged out successfully!");
         });

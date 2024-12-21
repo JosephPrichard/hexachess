@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,8 +17,6 @@ import java.util.function.Function;
 @JsonSerialize(using = BoardSerializer.class)
 public class ChessBoard {
 
-    // white pieces have an odd parity
-    // black pieces have an even parity
     public final static byte EMPTY = 0;
     public final static byte WHITE_PAWN = 1;
     public final static byte BLACK_PAWN = 2;

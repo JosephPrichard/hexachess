@@ -16,9 +16,9 @@ public class Templates {
     Template registerTemplate;
     Template leaderboardTemplate;
     Template profileTemplate;
-    Template settingsTemplate;
+    Template preferencesTemplates;
     Template currentGamesTemplate;
-    Template gameHistoryTemplate;
+    Template GameStateoryTemplate;
     Template searchTemplate;
     Template errorTemplate;
 
@@ -32,24 +32,13 @@ public class Templates {
         loginTemplate = handlebars.compile("/pages/login");
         leaderboardTemplate = handlebars.compile("/pages/leaderboard");
         profileTemplate = handlebars.compile("/pages/profile");
-        settingsTemplate = handlebars.compile("/pages/settings");
+        preferencesTemplates = handlebars.compile("/pages/preferences");
         currentGamesTemplate = handlebars.compile("/pages/currentGames");
-        gameHistoryTemplate = handlebars.compile("/pages/gameHistory");
+        GameStateoryTemplate = handlebars.compile("/pages/gameHistory");
         searchTemplate = handlebars.compile("/pages/searchPlayers");
         errorTemplate = handlebars.compile("/pages/error");
 
         // partials
         historyListTemplate = handlebars.compile("partials/historyList");
-    }
-
-    public static String applyQuietly(Template template) {
-        try {
-            if (template == null) {
-                return "";
-            }
-            return template.apply(null);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
     }
 }

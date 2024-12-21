@@ -49,7 +49,7 @@ public class HistoryDao {
         try {
             runner.execute(sql, historyInst.whiteId, historyInst.blackId,
                 historyInst.result, historyInst.data, historyInst.winEloDiff, historyInst.loseEloDiff);
-            LOGGER.info("Successfully inserted a history={}", historyInst);
+            LOGGER.info("Inserted a history={}", historyInst);
         } catch (SQLException ex) {
             LOGGER.error("Failed to insert a history={}", historyInst);
             throw new RuntimeException(ex);
@@ -77,7 +77,7 @@ public class HistoryDao {
             WHERE h1.id = ?""";
         try {
             var results = runner.query(sql, HIST_MAPPER, id);
-            LOGGER.info("Successfully selected history for id={}", id);
+            LOGGER.info("Selected history for id={}", id);
             return results;
         } catch (SQLException ex) {
             LOGGER.error("Failed to select history for id={}", id);
@@ -121,7 +121,7 @@ public class HistoryDao {
 
         try {
             var results = runner.query(sql, HIST_LIST_MAPPER, params.toArray());
-            LOGGER.info("Successfully selected user histories page for userId={}, afterId={}", userId, afterId);
+            LOGGER.info("Selected user histories page for userId={}, afterId={}", userId, afterId);
             return results;
         } catch (SQLException ex) {
             LOGGER.info("Failed to select user histories page for userId={}, afterId={}", userId, afterId);
