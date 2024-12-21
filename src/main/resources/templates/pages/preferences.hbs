@@ -19,13 +19,19 @@
             }
         }
 
-        function onUpdate() {
+        function onUpdateUser() {
             const usernameElem = document.getElementById("username");
             const bioElem = document.getElementById("bio");
+            const submitElem = document.getElementById("user-form-submit");
+
+            submitElem.innerHTML = `<div class="loader"></div`;
+            function onResponse() {
+                submitElem.innerHTML = "Login";
+            }
 
             postUpdateUser(usernameElem.value, bioElem.value)
                 .then(([object, ok]) => {
-                    console.log("Login response", object, ok);
+                    console.log("Update user response", object, ok);
 
                     const messageElem = document.getElementById("update-user-form-message");
                     messageElem.innerText = object.message;
@@ -35,7 +41,57 @@
                     } else {
                         messageElem.className = "red-color";
                     }
+
+                    onResponse();
                 })
+                .catch(onResponse)
+
+            return false;
+        }
+
+        async function postUpdatePassword(password, newPassword, newDupPassword) {
+            const formData = new FormData();
+            formData.append("password", password);
+            formData.append("new-password", newPassword);
+            formData.append("duplicate-new-password", newDupPassword);
+
+            const url =`/forms/update-password`;
+            try {
+                const resp = await fetch(url, { method: 'POST', body: formData });
+                return [await resp.json(), resp.ok];
+            } catch (ex) {
+                console.error(ex);
+                return [{ message: "An unexpected error has occurred" }, false];
+            }
+        }
+
+        function onUpdatePassword() {
+            const passwordElem = document.getElementById("password");
+            const newPasswordElem = document.getElementById("new-password");
+            const retypePasswordElem = document.getElementById("retype-password");
+            const submitElem = document.getElementById("password-form-submit");
+
+            submitElem.innerHTML = `<div class="loader"></div`;
+            function onResponse() {
+                submitElem.innerHTML = "Login";
+            }
+
+            postUpdatePassword(passwordElem.value, newPasswordElem.value, retypePasswordElem.value)
+                .then(([object, ok]) => {
+                    console.log("Update password response", object, ok);
+
+                    const messageElem = document.getElementById("update-password-form-message");
+                    messageElem.innerText = object.message;
+
+                    if (ok) {
+                        messageElem.className = "";
+                    } else {
+                        messageElem.className = "red-color";
+                    }
+
+                    onResponse();
+                })
+                .catch(onResponse)
 
             return false;
         }
@@ -63,25 +119,50 @@
 <body>
 {{> partials/banner }}
 <div class="center-horizontal-container">
-    <div class="title-lg">
-        Edit Profile
-    </div>
     <div style="width: 500px">
-        <form id="update-user-form" class="form-wrapper" onsubmit="return onUpdate();">
+        <div class="title-lg" style="padding-left: 0">
+            Edit Profile
+        </div>
+        <form class="form-wrapper" onsubmit="return onUpdateUser();">
+            <label for="country" style="font-size: 17px">Country</label>
+            <select id="country" name="country" value="{{country}}" style="margin-top: 5px; margin-bottom: 10px; width: 100%;">
+                <option value="US">US</option>
+                <option value="UK">UK</option>
+            </select>
+
             <label for="username" style="font-size: 17px">Username</label>
             <input id="username" name="username" placeholder="Username" value="{{username}}" style="margin-top: 5px; margin-bottom: 10px;"/>
+
             <label for="biography" style="font-size: 17px">Biography</label>
             <textarea id="bio" name="bio" rows="8">{{bio}}</textarea>
-            <button id="update-form-submit" class="button-grey" type="submit">
-                Update
+
+            <button id="user-form-submit" class="button-grey" type="submit">
+                Submit
             </button>
             <div id="update-user-form-message" style="margin-top: 20px; min-height: 20px;"></div>
         </form>
+        <div class="title-lg" style="padding-left: 0">
+            Update Password
+        </div>
+        <form class="form-wrapper" onsubmit="return onUpdatePassword();">
+            <label for="password" style="font-size: 17px">Current Password</label>
+            <input id="password" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+
+            <label for="new-password" style="font-size: 17px">New Password</label>
+            <input id="new-password" type="password" name="new-password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+            <label for="retype-password" style="font-size: 17px">Retype New Password</label>
+
+            <input id="retype-password" type="password" name="retype-password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+            <button id="password-form-submit" class="button-grey" type="submit">
+                Submit
+            </button>
+            <div id="update-password-form-message" style="margin-top: 20px; min-height: 20px;"></div>
+        </form>
         <br>
-        <br>
-        <button id="update-form-submit" class="button-grey button-red" onclick="onSignOut();">
+        <button class="button-grey button-red" onclick="onSignOut();">
             Sign Out
         </button>
+        <div style="height: 100px;"></div>
     </div>
 </div>
 </body>

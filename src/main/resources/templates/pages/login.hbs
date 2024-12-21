@@ -48,7 +48,6 @@
                 })
                 .catch(onResponse);
 
-            // used to prevent the form onsubmit event this is invoked within from refreshing the page
             return false;
         }
     </script>
@@ -60,11 +59,13 @@
         Login
     </div>
     <div style="width: 500px">
-        <form id="login-form" class="form-wrapper" onsubmit="return onLogin();">
+        <form class="form-wrapper" onsubmit="return onLogin();">
             <label for="username-login" style="font-size: 17px">Username</label>
             <input id="username-login" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+
             <label for="password-login" style="font-size: 17px">Password</label>
             <input id="password-login" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+
             <button id="login-form-submit" class="button-grey" type="submit">
                 Login
             </button>

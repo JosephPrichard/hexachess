@@ -110,19 +110,23 @@ public class FormRouter extends Jooby {
         post("/forms/update-password", ctx -> {
             ctx.setResponseHeader("Content-Type", "application/json");
 
-            var form = ctx.form();
-            var username = form.get("username");
-            var password = form.get("password");
+            var cookieStr = ctx.header("Cookie").valueOrNull();
 
-            if (username.isMissing() || password.isMissing()) {
-                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Form data is invalid"));
+            var form = ctx.form();
+            var passwordStr = form.get("password").toString();
+            var newPasswordStr = form.get("new-password").valueOrNull();
+            var dupPasswordStr = form.get("duplicate-new-password").valueOrNull();
+
+            if (!newPasswordStr.equals(dupPasswordStr)) {
+                throw new StatusCodeException(StatusCode.BAD_REQUEST, FormResp.ofJson("Password and retyped password must be equal"));
             }
 
-            var usernameStr = username.toString();
-            var passwordStr = password.toString();
-            var newPasswordStr = form.get("new-password").valueOrNull();
+            var session = sessionService.getSession(cookieStr);
+            if (session == null) {
+                throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Cannot update password when you are not logged in"));
+            }
 
-            var player = userDao.verify(usernameStr, passwordStr);
+            var player = userDao.verify(session.getUsername(), passwordStr);
             if (player == null) {
                 throw new StatusCodeException(StatusCode.UNAUTHORIZED, FormResp.ofJson("Login credentials are invalid"));
             }

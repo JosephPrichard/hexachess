@@ -4,7 +4,7 @@
     <title>Leaderboard - Hexachess</title>
     <link rel="stylesheet" href="/css/index.css">
     <script>
-        async function postLogin(username, password, dupPassword) {
+        async function postRegister(username, password, dupPassword) {
             const formData = new FormData();
             formData.append("username", username);
             formData.append("password", password);
@@ -31,7 +31,7 @@
                 submitElem.innerHTML = "Register";
             }
 
-            postLogin(usernameElem.value, passwordElem.value, dupPasswordElem.value)
+            postRegister(usernameElem.value, passwordElem.value, dupPasswordElem.value)
                 .then(([object, ok]) => {
                     console.log("Register response", object, ok);
 
@@ -62,13 +62,16 @@
         Register
     </div>
     <div style="width: 500px">
-        <form id="register-form" class="form-wrapper" onsubmit="return onSignUp();">
+        <form class="form-wrapper" onsubmit="return onSignUp();">
             <label for="username-register" style="font-size: 17px">Username</label>
             <input id="username-register" name="username" placeholder="Username" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+
             <label for="password-register" style="font-size: 17px">Password</label>
             <input id="password-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 10px;"/>
+
             <label for="password-retype-register" style="font-size: 17px">Confirm Password</label>
             <input id="password-retype-register" type="password" name="password" placeholder="Password" value="" style="margin-top: 5px; margin-bottom: 15px;"/>
+
             <button id="register-form-submit" class="button-grey" type="submit">
                 Register
             </button>
